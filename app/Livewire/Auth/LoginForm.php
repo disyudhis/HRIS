@@ -21,7 +21,7 @@ class LoginForm extends Component
 
         if (Auth::attempt(['email' => $this->email, 'password' => $this->password])) {
             session()->regenerate();
-            return redirect()->route('dashboard.check-in');
+            return redirect()->route(Auth::user()->isAdmin() ? 'admin.offices.index' : 'dashboard.check-in');
         }
 
         $this->addError('email', __('auth.failed'));

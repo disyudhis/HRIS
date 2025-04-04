@@ -20,42 +20,30 @@ class User extends Authenticatable
     use Notifiable;
     use TwoFactorAuthenticatable;
 
-    const ROLE_ADMIN = "ADMIN";
-    const ROLE_EMPLOYEE = "PEGAWAI";
-    const ROLE_MANAGER = "MANAGER";
+    const ROLE_ADMIN = 'ADMIN';
+    const ROLE_EMPLOYEE = 'PEGAWAI';
+    const ROLE_MANAGER = 'MANAGER';
 
     /**
      * The attributes that are mass assignable.
      *
      * @var array<int, string>
      */
-    protected $fillable = [
-        'name',
-        'email',
-        'user_type',
-        'password',
-    ];
+    protected $fillable = ['name', 'email', 'user_type', 'password', 'employee_id', 'office_id', 'manager_id', 'position', 'department'];
 
     /**
      * The attributes that should be hidden for serialization.
      *
      * @var array<int, string>
      */
-    protected $hidden = [
-        'password',
-        'remember_token',
-        'two_factor_recovery_codes',
-        'two_factor_secret',
-    ];
+    protected $hidden = ['password', 'remember_token', 'two_factor_recovery_codes', 'two_factor_secret'];
 
     /**
      * The accessors to append to the model's array form.
      *
      * @var array<int, string>
      */
-    protected $appends = [
-        'profile_photo_url',
-    ];
+    protected $appends = ['profile_photo_url'];
 
     /**
      * Get the attributes that should be cast.
@@ -68,5 +56,50 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Check if user is admin
+     */
+    public function isAdmin()
+    {
+        return $this->user_type === 'ADMIN';
+    }
+
+    /**
+     * Check if user is manager
+     */
+    public function isManager()
+    {
+        return $this->user_type === 'MANAGER';
+    }
+
+    /**
+     * Check if user is employee
+     */
+    public function isEmployee()
+    {
+        return $this->user_type === 'PEGAWAI';
+    }
+
+    public function manager()
+    {
+        return $this->belongsTo(User::class, 'manager_id');
+    }
+
+    /**
+     * Get the employees managed by this user
+     */
+    public function employees()
+    {
+        return $this->hasMany(User::class, 'manager_id');
+    }
+
+    /**
+     * Get the office this user belongs to
+     */
+    public function office()
+    {
+        return $this->belongsTo(Offices::class);
     }
 }

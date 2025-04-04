@@ -1,6 +1,7 @@
 <div class="w-full space-y-6" x-data="checkInMap()" x-init="initMap({{ $officeLatitude }}, {{ $officeLongitude }}, {{ $allowedRadius }})">
     <!-- Map Container -->
-    <div wire:ignore class="w-full h-64 rounded-xl overflow-hidden border border-[#DADADA] shadow-sm" id="map"></div>
+    <div wire:ignore class="w-full h-64 rounded-xl overflow-hidden border border-[#DADADA] shadow-sm" id="map">
+    </div>
 
     <!-- Location Status -->
     <div class="bg-gray-50 rounded-xl border border-[#DADADA] p-4">
@@ -8,17 +9,17 @@
             <div>
                 <h3 class="font-medium text-[#101317]">Your Location</h3>
                 <template x-if="userLocation">
-                    <p class="text-[#ACAFB5] text-sm">
+                    <p class="text-muted text-sm">
                         <span x-text="userLocation.latitude.toFixed(6)"></span>,
                         <span x-text="userLocation.longitude.toFixed(6)"></span>
                     </p>
                 </template>
                 <template x-if="!userLocation">
-                    <p class="text-[#ACAFB5] text-sm">Waiting for location...</p>
+                    <p class="text-muted text-sm">Waiting for location...</p>
                 </template>
             </div>
             <div x-show="isLocating" class="animate-pulse">
-                <svg class="w-5 h-5 text-[#3085FE]" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                     xmlns="http://www.w3.org/2000/svg">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z">
@@ -33,12 +34,12 @@
             <div>
                 <h3 class="font-medium text-[#101317]">Distance to Office</h3>
                 <template x-if="distance !== null">
-                    <p class="text-[#ACAFB5] text-sm">
+                    <p class="text-muted text-sm">
                         <span x-text="distance.toFixed(1)"></span> meters
                     </p>
                 </template>
                 <template x-if="distance === null">
-                    <p class="text-[#ACAFB5] text-sm">Calculating...</p>
+                    <p class="text-muted text-sm">Calculating...</p>
                 </template>
             </div>
             <div>
@@ -71,24 +72,17 @@
 
     <!-- Check-in Button -->
     <button x-on:click="checkIn" x-bind:disabled="!isInRange"
-        x-bind:class="{ 'bg-[#3085FE] hover:bg-[#2a75e6]': isInRange, 'bg-[#ACAFB5] cursor-not-allowed': !isInRange }"
+        x-bind:class="{ 'bg-primary hover:bg-[#2a75e6]': isInRange, 'bg-muted cursor-not-allowed': !isInRange }"
         class="w-full h-[60px] text-white rounded-xl text-xl font-medium transition-colors">
         Check In Now
     </button>
 
-    <p class="text-center text-[#ACAFB5] text-sm">
+    <p class="text-center text-muted text-sm">
         You must be within {{ $allowedRadius }} meters of the office location to check in
     </p>
 </div>
 
-@push('styles')
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-@endpush
-
 @push('scripts')
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script>
         function checkInMap() {
             return {
@@ -105,86 +99,76 @@
                 watchId: null,
 
                 initMap(officeLat, officeLng, radius) {
-                    try {
-                        const mapContainer = document.getElementById('map');
-                        if (!mapContainer) {
-                            console.error('Map container not found');
-                            return;
-                        }
-                        if (this.map) {
-                            this.map.remove();
-                            this.map = null;
-                        }
-                        this.officeLocation = {
-                            latitude: officeLat,
-                            longitude: officeLng
-                        };
-                        this.allowedRadius = radius;
-                        this.map = L.map('map', {
-                            preferCanvas: true,
-                            zoomControl: false
-                        }).setView([officeLat, officeLng], 18);
+                    this.officeLocation = {
+                        latitude: officeLat,
+                        longitude: officeLng
+                    };
+                    this.allowedRadius = radius;
 
-                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-                            maxZoom: 19
-                        }).addTo(this.map);
+                    // Initialize map centered on office location
+                    this.map = L.map('map').setView([officeLat, officeLng], 18);
 
-                        const officeIcon = L.icon({
-                            iconUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/images/marker-icon.png',
-                            iconSize: [25, 41],
-                            iconAnchor: [12, 41],
-                            popupAnchor: [1, -34],
-                            shadowUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/images/marker-shadow.png',
-                            shadowSize: [41, 41]
-                        });
+                    // Add tile layer (OpenStreetMap)
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    }).addTo(this.map);
 
-                        this.officeMarker = L.marker([officeLat, officeLng], {
-                            icon: officeIcon
-                        }).addTo(this.map);
-                        this.officeMarker.bindPopup("Office Location").openPopup();
+                    // Add office marker
+                    const officeIcon = L.icon({
+                        iconUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/images/marker-icon.png',
+                        iconSize: [25, 41],
+                        iconAnchor: [12, 41],
+                        popupAnchor: [1, -34],
+                        shadowUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/images/marker-shadow.png',
+                        shadowSize: [41, 41]
+                    });
 
-                        L.circle([officeLat, officeLng], {
-                            color: '#3085FE',
-                            fillColor: '#3085FE',
-                            fillOpacity: 0.1,
-                            radius: this.allowedRadius
-                        }).addTo(this.map);
+                    this.officeMarker = L.marker([officeLat, officeLng], {
+                        icon: officeIcon
+                    }).addTo(this.map);
+                    this.officeMarker.bindPopup("Office Location").openPopup();
 
+                    // Add radius circle around office
+                    L.circle([officeLat, officeLng], {
+                        color: '#3085FE',
+                        fillColor: '#3085FE',
+                        fillOpacity: 0.1,
+                        radius: this.allowedRadius
+                    }).addTo(this.map);
 
-                        setTimeout(() => {
-                            this.map.invalidateSize();
-                            this.getUserLocation();
-                        }, 300);
-                    } catch (error) {
-                        console.error('Map initialization failed:', error);
-                    }
+                    // Get user location using the shared location service
+                    this.getUserLocation();
                 },
 
                 getUserLocation() {
-                    const self = this;
+                    this.isLocating = true;
 
+                    // Use the shared location service
+                    window.LocationService.getUserLocation(
+                        // Success callback
+                        (position) => this.handlePositionSuccess(position),
+                        // Error callback
+                        (error) => this.handlePositionError(error),
+                        // Options
+                        {
+                            enableHighAccuracy: true,
+                            maximumAge: 10000,
+                            timeout: 10000
+                        }
+                    );
+
+                    // Also set up a watch position for real-time updates
                     if (navigator.geolocation) {
-                        this.isLocating = true;
-
                         this.watchId = navigator.geolocation.watchPosition(
-                            (position) => {
-                                self.handlePositionSuccess(position);
-                            },
-                            (error) => {
-                                self.handlePositionError(error);
-                            }, {
+                            (position) => this.handlePositionSuccess(position),
+                            (error) => console.error("Watch position error:", error), {
                                 enableHighAccuracy: true,
-                                maximumAge: 10000,
-                                timeout: 15000
+                                maximumAge: 5000,
+                                timeout: 10000
                             }
                         );
-                    } else {
-                        alert("Geolocation is not supported by this browser.");
-                        this.isLocating = false;
                     }
                 },
-
 
                 handlePositionSuccess(position) {
                     const {
@@ -202,13 +186,17 @@
                     if (this.userMarker) {
                         this.userMarker.setLatLng([latitude, longitude]);
                     } else {
-                        const userIcon = L.icon({
-                            iconUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-                            iconSize: [25, 41],
-                            iconAnchor: [12, 41],
-                            popupAnchor: [1, -34],
-                            shadowUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/images/marker-shadow.png',
-                            shadowSize: [41, 41]
+                        // Create a custom icon for user location
+                        const userIcon = L.divIcon({
+                            html: `
+                            <div class="relative">
+                                <div class="absolute inset-0 bg-blue-500 opacity-25 rounded-full animate-ping"></div>
+                                <div class="relative bg-blue-500 w-4 h-4 rounded-full border-2 border-white"></div>
+                            </div>
+                        `,
+                            className: 'user-location-marker',
+                            iconSize: [20, 20],
+                            iconAnchor: [10, 10]
                         });
 
                         this.userMarker = L.marker([latitude, longitude], {
@@ -239,8 +227,24 @@
                         }).addTo(this.map);
                     }
 
-                    // Calculate distance to office
-                    this.calculateDistance();
+                    // Calculate distance to office using the shared service
+                    this.distance = window.LocationService.calculateDistance(
+                        latitude,
+                        longitude,
+                        this.officeLocation.latitude,
+                        this.officeLocation.longitude
+                    );
+
+                    this.isInRange = this.distance <= this.allowedRadius;
+
+                    // Update Livewire component with location data
+                    @this.call('locationUpdated',
+                        this.userLocation.latitude,
+                        this.userLocation.longitude,
+                        this.distance,
+                        this.isInRange
+                    );
+
                     this.isLocating = false;
                 },
 
@@ -264,37 +268,6 @@
                     alert(errorMessage);
                 },
 
-                calculateDistance() {
-                    if (!this.userLocation || !this.officeLocation) return;
-
-                    // Haversine formula to calculate distance between two points
-                    const R = 6371e3; // Earth radius in meters
-                    const φ1 = this.toRadians(this.userLocation.latitude);
-                    const φ2 = this.toRadians(this.officeLocation.latitude);
-                    const Δφ = this.toRadians(this.officeLocation.latitude - this.userLocation.latitude);
-                    const Δλ = this.toRadians(this.officeLocation.longitude - this.userLocation.longitude);
-
-                    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-                        Math.cos(φ1) * Math.cos(φ2) *
-                        Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-                    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-                    this.distance = R * c;
-                    this.isInRange = this.distance <= this.allowedRadius;
-
-                    // Update Livewire component with location data
-                    @this.call('locationUpdated',
-                        this.userLocation.latitude,
-                        this.userLocation.longitude,
-                        this.distance,
-                        this.isInRange
-                    );
-                },
-
-                toRadians(degrees) {
-                    return degrees * Math.PI / 180;
-                },
-
                 checkIn() {
                     if (this.isInRange) {
                         @this.call('performCheckIn');
@@ -311,3 +284,4 @@
         }
     </script>
 @endpush
+

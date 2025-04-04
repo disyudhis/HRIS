@@ -16,6 +16,10 @@ return new class extends Migration
             $table->string('name');
             $table->string('email')->unique();
             $table->string('user_type')->default('PEGAWAI')->nullable();
+            $table->foreignId('manager_id')->nullable()->constrained('users')->onDelete('set null');
+            $table->string('position')->nullable();
+            $table->string('department')->nullable();
+            $table->string('employee_id')->nullable()->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();
