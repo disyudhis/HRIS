@@ -27,8 +27,6 @@ class Offices extends Model
         'latitude'        => 'float',
         'longitude'       => 'float',
         'check_in_radius' => 'float',
-        'work_start_time' => 'datetime:H:i',
-        'work_end_time'   => 'datetime:H:i',
         'is_active'       => 'boolean',
     ];
 

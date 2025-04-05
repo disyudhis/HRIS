@@ -29,8 +29,10 @@ class UserFactory extends Factory
         return [
             'name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
-            'user_type' => 'PEGAWAI',
             'email_verified_at' => now(),
+            'user_type' => fake()->randomElement(['PEGAWAI', 'ADMIN', 'MANAGER']),
+            'position' => fake()->jobTitle(),
+            'employee_id' => 'EMP' . fake()->unique()->randomNumber(5),
             'password' => static::$password ??= Hash::make('password'),
             'two_factor_secret' => null,
             'two_factor_recovery_codes' => null,
@@ -69,5 +71,56 @@ class UserFactory extends Factory
                 ->when(is_callable($callback), $callback),
             'ownedTeams'
         );
+    }
+
+     /**
+     * Configure the model as an admin.
+     */
+    public function admin(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'user_type' => 'ADMIN',
+        ]);
+    }
+
+    /**
+     * Configure the model as a manager.
+     */
+    public function manager(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'user_type' => 'MANAGER',
+        ]);
+    }
+
+    /**
+     * Configure the model as an employee.
+     */
+    public function employee(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'user_type' => 'PEGAWAI',
+        ]);
+    }
+
+    /**
+     * Assign the user to an office.
+     */
+    public function inOffice(Office $office): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'office_id' => $office->id,
+        ]);
+    }
+
+    /**
+     * Assign a manager to the user.
+     */
+    public function withManager(User $manager): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'manager_id' => $manager->id,
+            'office_id' => $manager->office_id,
+        ]);
     }
 }

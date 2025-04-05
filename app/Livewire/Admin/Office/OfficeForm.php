@@ -118,8 +118,6 @@ class OfficeForm extends Component  // Form properties
                 'longitude'       => $this->longitude,
                 'check_in_radius' => $this->check_in_radius,
                 'description'     => $this->description,
-                'work_start_time' => $this->work_start_time,
-                'work_end_time'   => $this->work_end_time,
                 'is_active'       => $this->is_active,
             ]);
 

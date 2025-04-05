@@ -30,7 +30,7 @@ class UserForm extends Component
         $rules = [
             'name' => 'required|string|max:255',
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($this->userId)],
-            'user_type' => 'required|in:MANAGER,EMPLOYEE',
+            'user_type' => 'required|in:MANAGER,PEGAWAI',
             'manager_id' => 'nullable|exists:users,id',
             'position' => 'nullable|string|max:255',
             'department' => 'nullable|string|max:255',
@@ -168,7 +168,7 @@ class UserForm extends Component
     {
         $offices = Offices::where('is_active', true)->orderBy('name')->get();
 
-        $managers = User::where('user_type',  'manager')
+        $managers = User::where('user_type',  'MANAGER')
             ->when($this->office_id, function ($query) {
                 return $query->where('office_id', $this->office_id);
             })

@@ -80,7 +80,7 @@ class UserList extends Component
 
             $this->confirmingDeletion = false;
             $this->userToDelete = null;
-            
+
             session()->flash('message', 'User deleted successfully.');
         }
     }
