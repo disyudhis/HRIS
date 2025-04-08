@@ -25,8 +25,8 @@
 </head>
 
 <body class="font-sans antialiased bg-gray-50">
-    @component('components.header')
-    @endcomponent
+    {{-- @component('components.header')
+    @endcomponent --}}
 
     @component('components.sidebar')
     @endcomponent
@@ -35,7 +35,7 @@
     @endcomponent
 
     <!-- Main Content -->
-    <main class="md:ml-64 pt-24 pb-20 px-4 md:py-8 md:px-8">
+    <main class="md:ml-64 pb-20 px-4 md:py-8 md:px-8">
         {{ $slot }}
     </main>
 

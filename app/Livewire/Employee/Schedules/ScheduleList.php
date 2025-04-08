@@ -12,11 +12,14 @@ class ScheduleList extends Component
     public $selectedDate;
     public $schedules = [];
     public $view = 'week'; // week or month
+    public $displayLimit = 15;
+    public $allDates = [];
 
     public function mount()
     {
         $this->selectedDate = Carbon::now()->format('Y-m-d');
         $this->loadSchedules();
+        $this->prepareAllDates();
     }
 
     public function loadSchedules()
@@ -38,7 +41,32 @@ class ScheduleList extends Component
             ->get()
             ->groupBy(function ($item) {
                 return $item->date->format('Y-m-d');
-            })->all();
+            })
+            ->all();
+
+        $this->prepareAllDates();
+    }
+
+    public function prepareAllDates()
+    {
+        $date = Carbon::parse($this->selectedDate);
+        $this->allDates = [];
+
+        if ($this->view === 'month') {
+            $startDate = $date->copy()->startOfMonth();
+            $endDate = $date->copy()->endOfMonth();
+            $currentDate = $startDate->copy();
+
+            while ($currentDate <= $endDate) {
+                $this->allDates[] = [
+                    'date' => $currentDate->format('Y-m-d'),
+                    'display_date' => $currentDate->format('F d, Y'),
+                    'is_today' => $currentDate->isToday(),
+                    'has_schedule' => isset($this->schedules[$currentDate->format('Y-m-d')]),
+                ];
+                $currentDate->addDay();
+            }
+        }
     }
 
     public function changeView($view)
@@ -66,6 +94,12 @@ class ScheduleList extends Component
         }
 
         $this->loadSchedules();
+        $this->displayLimit = 15;
+    }
+
+    public function loadMoreDays()
+    {
+        $this->displayLimit += 15;
     }
 
     public function render()
@@ -118,6 +152,7 @@ class ScheduleList extends Component
             return view('livewire.employee.schedules.schedule-list-month', [
                 'weeks' => $weeks,
                 'month' => $date->format('F Y'),
+                'displayDates' => array_slice($this->allDates, 0, $this->displayLimit)
             ]);
         }
     }
