@@ -67,7 +67,7 @@
                         <td class="px-6 py-4 whitespace-nowrap">
                             @php
                             $manager = \App\Models\User::where('office_id', $office->id)
-                            ->where('user_type', 'manager')
+                            ->where('user_type', 'MANAGER')
                             ->first();
                             @endphp
 

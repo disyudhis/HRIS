@@ -18,11 +18,39 @@ class CheckIn extends Component
     public $checkInStatus = null;
     public $errorMessage = null;
 
-    public $officeLatitude = -6.914517924760601; // Example: Jakarta coordinates
-    public $officeLongitude = 107.66709759844906;
+    public $officeLatitude; // Example: Jakarta coordinates
+    public $officeLongitude;
     public $allowedRadius = 10; // in meters
 
     protected $listeners = ['locationUpdated', 'performCheckIn'];
+
+
+    public function mount()
+    {
+        $user = Auth::user();
+
+        if (!$user->office_id) {
+            $this->errorMessage = "You are not assigned to any office. Please contact your administrator.";
+            return;
+        }
+
+        $office = \App\Models\Offices::find($user->office_id);
+
+        if (!$office) {
+            $this->errorMessage = "Office not found. Please contact your administrator.";
+            return;
+        }
+
+        if (!$office->is_active) {
+            $this->errorMessage = "Your office is currently inactive. Please contact your administrator.";
+            return;
+        }
+
+        $this->officeLatitude = $office->latitude;
+        $this->officeLongitude = $office->longitude;
+        $this->allowedRadius = $office->check_in_radius;
+        $this->officeName = $office->name;
+    }
 
     public function locationUpdated($latitude, $longitude, $distance, $isInRange)
     {

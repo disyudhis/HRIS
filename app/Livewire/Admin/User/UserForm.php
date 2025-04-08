@@ -16,7 +16,7 @@ class UserForm extends Component
     public $email;
     public $password;
     public $password_confirmation;
-    public $user_type = 'employee';
+    public $user_type = 'PEGAWAI';
     public $manager_id;
     public $position;
     public $department;

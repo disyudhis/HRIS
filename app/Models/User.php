@@ -100,6 +100,6 @@ class User extends Authenticatable
      */
     public function office()
     {
-        return $this->belongsTo(Offices::class);
+        return $this->belongsTo(Offices::class, 'office_id');
     }
 }
