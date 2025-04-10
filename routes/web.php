@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Manager\Schedule\ScheduleController;
+use App\Http\Controllers\ProfileController;
 use App\Models\User;
 use App\Models\Offices;
 use Illuminate\Support\Facades\Route;
@@ -22,6 +23,14 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     Route::get('/schedules', function () {
         return view('employee.schedules.index');
     })->name('employee.schedules.index');
+
+    Route::prefix('profile')
+        ->name('profile.')
+        ->group(function () {
+            Route::get('/', [ProfileController::class, 'index'])->name('index');
+            Route::get('/edit', [ProfileController::class, 'edit'])->name('edit');
+            Route::get('/change-password', [ProfileController::class, 'changePassword'])->name('change-password');
+        });
 
     Route::middleware([AdminMiddleware::class])
         ->prefix('admin')

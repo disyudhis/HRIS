@@ -8,13 +8,6 @@
             </div>
         @endif
 
-        <div class="flex justify-end mb-4">
-            <a href="{{ route('manager.schedules.create') }}"
-                class="bg-[#3085FE] text-white px-4 py-2 rounded-lg text-sm font-medium">
-                Create New Schedule
-            </a>
-        </div>
-
         <livewire:manager.schedules.schedule-list />
     </div>
 </x-base-layout>

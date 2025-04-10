@@ -167,17 +167,17 @@
                                             </label>
                                             <label class="flex items-center space-x-2">
                                                 <input type="checkbox" wire:model="repeatDays" value="5"
-                                                    class="rounded border-gray-300 text-[#3085FE] shadow-sm focus:border-[#3085FE] focus:ring-[#3085FE]">
+                                                    class="rounded border-gray-300 text-[#3085FE] shadow-sm focus:border-[#3085FE] focus:ring-[#3085FE]" />
                                                 <span class="text-sm">Fri</span>
                                             </label>
                                             <label class="flex items-center space-x-2">
                                                 <input type="checkbox" wire:model="repeatDays" value="6"
-                                                    class="rounded border-gray-300 text-[#3085FE] shadow-sm focus:border-[#3085FE] focus:ring-[#3085FE]">
+                                                    class="rounded border-gray-300 text-[#3085FE] shadow-sm focus:border-[#3085FE] focus:ring-[#3085FE]" />
                                                 <span class="text-sm">Sat</span>
                                             </label>
                                             <label class="flex items-center space-x-2">
                                                 <input type="checkbox" wire:model="repeatDays" value="0"
-                                                    class="rounded border-gray-300 text-[#3085FE] shadow-sm focus:border-[#3085FE] focus:ring-[#3085FE]">
+                                                    class="rounded border-gray-300 text-[#3085FE] shadow-sm focus:border-[#3085FE] focus:ring-[#3085FE]" />
                                                 <span class="text-sm">Sun</span>
                                             </label>
                                         </div>
