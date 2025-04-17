@@ -16,6 +16,7 @@ class Schedule extends Model
         'end_time',
         'shift_type',
         'notes',
+        'is_checked',
         'created_by',
     ];
 

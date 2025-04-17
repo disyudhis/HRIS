@@ -42,8 +42,18 @@ class ScheduleList extends Component
 
     public function loadDepartments()
     {
-        // Get unique departments from the team members
-        $this->departments = User::where('manager_id', Auth::id())->whereNotNull('department')->select('department')->distinct()->pluck('department')->toArray();
+        $this->departments = User::where('manager_id', Auth::id())
+            ->with('user_details')
+            ->whereHas('user_details', function ($query) {
+                $query->whereNotNull('bidang');
+            })
+            ->get()
+            ->map(function ($user) {
+                return $user->user_details->bidang;
+            })
+            ->unique()
+            ->values()
+            ->toArray();
     }
 
     public function loadEmployees()
@@ -89,9 +99,11 @@ class ScheduleList extends Component
             ->get();
 
         // Kelompokkan jadwal berdasarkan tanggal dalam format string
-        $this->schedules = $schedules->groupBy(function ($schedule) {
-            return $schedule->date->format('Y-m-d');
-        })->all();
+        $this->schedules = $schedules
+            ->groupBy(function ($schedule) {
+                return $schedule->date->format('Y-m-d');
+            })
+            ->all();
     }
 
     public function updatedSelectedDepartment()

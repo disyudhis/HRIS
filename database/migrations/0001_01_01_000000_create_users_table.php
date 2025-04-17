@@ -13,18 +13,19 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
+            $table->string('name')->nullable();
+            $table->string('full_name')->nullable();
             $table->string('email')->unique();
             $table->string('user_type')->default('PEGAWAI')->nullable();
+            $table->string('phone')->nullable();
             $table->foreignId('manager_id')->nullable()->constrained('users')->onDelete('set null');
-            $table->string('position')->nullable();
-            $table->string('department')->nullable();
             $table->string('employee_id')->nullable()->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();
             $table->foreignId('current_team_id')->nullable();
             $table->string('profile_photo_path', 2048)->nullable();
+            $table->string('profile_photo_public_id', 2048)->nullable();
             $table->timestamps();
         });
 

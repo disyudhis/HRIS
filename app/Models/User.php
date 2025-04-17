@@ -29,7 +29,7 @@ class User extends Authenticatable
      *
      * @var array<int, string>
      */
-    protected $fillable = ['name', 'email', 'user_type', 'password', 'employee_id', 'office_id', 'manager_id', 'position', 'department'];
+    protected $fillable = ['name', 'full_name', 'phone', 'email', 'user_type', 'password', 'employee_id', 'office_id', 'manager_id', 'profile_photo_path', 'profile_photo_public_id'];
 
     /**
      * The attributes that should be hidden for serialization.
@@ -101,5 +101,14 @@ class User extends Authenticatable
     public function office()
     {
         return $this->belongsTo(Offices::class, 'office_id');
+    }
+
+    public function user_details()
+    {
+        return $this->hasOne(UserDetails::class, 'user_id');
+    }
+
+    public function schedules(){
+        return $this->hasMany(Schedule::class, 'user_id');
     }
 }

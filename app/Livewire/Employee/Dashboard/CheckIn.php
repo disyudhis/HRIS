@@ -13,22 +13,22 @@ use Illuminate\Support\Facades\Auth;
 
 class CheckIn extends Component
 {
-    public $userLatitude = null;
-    public $userLongitude = null;
-    public $distance = null;
-    public $isInRange = false;
-    public $checkInStatus = null;
-    public $errorMessage = null;
-    public $todayAttendance = null;
-    public $todaySchedule = null;
+    public $userLatitude     = null;
+    public $userLongitude    = null;
+    public $distance         = null;
+    public $isInRange        = false;
+    public $checkInStatus    = null;
+    public $errorMessage     = null;
+    public $todayAttendance  = null;
+    public $todaySchedule    = null;
     public $isWithinSchedule = false;
-    public $scheduleStatus = null;
+    public $scheduleStatus   = null;
 
-    // Office location coordinates
-    public $officeLatitude = null;
+      // Office location coordinates
+    public $officeLatitude  = null;
     public $officeLongitude = null;
-    public $allowedRadius = null;
-    public $officeName = null;
+    public $allowedRadius   = null;
+    public $officeName      = null;
 
     protected $listeners = ['locationUpdated', 'performCheckIn', 'performCheckOut'];
 
@@ -53,18 +53,18 @@ class CheckIn extends Component
             return;
         }
 
-        $this->officeLatitude = $office->latitude;
+        $this->officeLatitude  = $office->latitude;
         $this->officeLongitude = $office->longitude;
-        $this->allowedRadius = $office->check_in_radius;
-        $this->officeName = $office->name;
+        $this->allowedRadius   = $office->check_in_radius;
+        $this->officeName      = $office->name;
 
-        // Check if user already has attendance for today
+          // Check if user already has attendance for today
         $this->loadTodayAttendance();
 
-        // Load today's schedule
+          // Load today's schedule
         $this->loadTodaySchedule();
 
-        // Check if current time is within schedule
+          // Check if current time is within schedule
         $this->checkScheduleTime();
     }
 
@@ -89,26 +89,26 @@ class CheckIn extends Component
             return;
         }
 
-        $now = Carbon::now();
+        $now           = Carbon::now();
         $scheduleStart = Carbon::parse($this->todaySchedule->start_time);
-        $scheduleEnd = Carbon::parse($this->todaySchedule->end_time);
+        $scheduleEnd   = Carbon::parse($this->todaySchedule->end_time);
 
-        // Check if schedule crosses midnight
+          // Check if schedule crosses midnight
         $crossesMidnight = $scheduleEnd->lt($scheduleStart);
 
-        // Allow check-in 30 minutes before schedule starts
+          // Allow check-in 30 minutes before schedule starts
         $checkInWindow = $scheduleStart->copy()->subMinutes(30);
 
-        // Allow check-out until 2 hours after schedule ends
+          // Allow check-out until 2 hours after schedule ends
         $checkOutWindow = $scheduleEnd->copy()->addHours(2);
 
-        // Adjust end time if schedule crosses midnight
+          // Adjust end time if schedule crosses midnight
         if ($crossesMidnight) {
-            // If current time is before midnight and after start time
+              // If current time is before midnight and after start time
             if ($now->gte($checkInWindow)) {
                 $this->isWithinSchedule = true;
             }
-            // If current time is after midnight but before end time
+              // If current time is after midnight but before end time
             elseif ($now->lte($checkOutWindow)) {
                 $this->isWithinSchedule = true;
             } else {
@@ -121,7 +121,7 @@ class CheckIn extends Component
                 }
             }
         } else {
-            // Normal case (not crossing midnight)
+              // Normal case (not crossing midnight)
             if ($now->between($checkInWindow, $checkOutWindow)) {
                 $this->isWithinSchedule = true;
             } else {
@@ -138,14 +138,14 @@ class CheckIn extends Component
 
     public function locationUpdated($latitude, $longitude, $distance, $isInRange)
     {
-        $this->userLatitude = $latitude;
+        $this->userLatitude  = $latitude;
         $this->userLongitude = $longitude;
-        $this->distance = round($distance);
-        $this->isInRange = $isInRange;
+        $this->distance      = round($distance);
+        $this->isInRange     = $isInRange;
 
-        // Reset status messages when location changes
+          // Reset status messages when location changes
         $this->checkInStatus = null;
-        $this->errorMessage = null;
+        $this->errorMessage  = null;
     }
 
     public function performCheckIn()
@@ -165,28 +165,29 @@ class CheckIn extends Component
             return;
         }
 
-        // try {
-        //     // Create attendance record
-        //     Attendance::create([
-        //         'user_id' => Auth::id(),
-        //         'check_in_time' => Carbon::now(),
-        //         'latitude' => $this->userLatitude,
-        //         'longitude' => $this->userLongitude,
-        //         'distance' => $this->distance,
-        //         'status' => $this->determineAttendanceStatus(),
-        //     ]);
+        try {
+              // Create attendance record
+            Attendance::create([
+                'user_id'       => Auth::id(),
+                'schedule_id'   => $this->todaySchedule->id,
+                'check_in_time' => Carbon::now(),
+                'latitude'      => $this->userLatitude,
+                'longitude'     => $this->userLongitude,
+                'distance'      => $this->distance,
+                'status'        => $this->determineAttendanceStatus(),
+            ]);
 
-        //     $this->checkInStatus = 'Success! You have checked in at ' . Carbon::now()->format('h:i A');
-        //     $this->errorMessage = null;
+            $this->checkInStatus = 'Success! You have checked in at ' . Carbon::now()->format('h:i A');
+            $this->errorMessage  = null;
 
-        //     // Reload attendance data
-        //     $this->loadTodayAttendance();
+              // Reload attendance data
+            $this->loadTodayAttendance();
 
-        //     $this->dispatch('checkInSuccess');
-        // } catch (\Exception $e) {
-        //     $this->errorMessage = 'Failed to check in. Please try again!';
-        //     $this->checkInStatus = null;
-        // }
+            $this->dispatch('checkInSuccess');
+        } catch (\Exception $e) {
+            $this->errorMessage  = 'Failed to check in. Please try again!';
+            $this->checkInStatus = null;
+        }
     }
 
     public function performCheckOut()
@@ -207,19 +208,19 @@ class CheckIn extends Component
         }
 
         try {
-            // Update attendance record with check out time
+              // Update attendance record with check out time
             $this->todayAttendance->check_out_time = Carbon::now();
             $this->todayAttendance->save();
 
             $this->checkInStatus = 'Success! You have checked out at ' . Carbon::now()->format('h:i A');
-            $this->errorMessage = null;
+            $this->errorMessage  = null;
 
-            // Reload attendance data
+              // Reload attendance data
             $this->loadTodayAttendance();
 
             $this->dispatch('checkOutSuccess');
         } catch (\Exception $e) {
-            $this->errorMessage = 'Failed to check out. Please try again.';
+            $this->errorMessage  = 'Failed to check out. Please try again.';
             $this->checkInStatus = null;
         }
     }
@@ -230,10 +231,10 @@ class CheckIn extends Component
             return 'PRESENT';
         }
 
-        $now = Carbon::now();
+        $now           = Carbon::now();
         $scheduleStart = Carbon::parse($this->todaySchedule->start_time);
 
-        // If check-in is more than 15 minutes late, mark as 'late'
+          // If check-in is more than 15 minutes late, mark as 'late'
         if ($now->gt($scheduleStart->copy()->addMinutes(15))) {
             return 'LATE';
         }

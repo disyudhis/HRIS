@@ -1,90 +1,90 @@
 <div>
-    <div class="bg-white rounded-lg shadow-sm p-4 md:p-6 mb-6">
-        <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 md:mb-6">
-            <h1 class="text-xl md:text-2xl font-bold text-[#101317] mb-2 md:mb-0">
+    <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
+        <div class="flex items-center justify-between mb-6">
+            <h1 class="text-2xl font-bold text-[#101317]">
                 {{ $isEdit ? 'Edit User: ' . $name : 'Create New User' }}
             </h1>
-            <a href="{{ route('admin.users.index') }}" class="text-[#3085FE] hover:underline text-sm">
+            <a href="{{ route('admin.users.index') }}" class="text-[#3085FE] hover:underline">
                 Back to Users
             </a>
         </div>
 
         @if (session()->has('message'))
-            <div class="mb-4 p-3 bg-green-100 text-green-700 rounded-md text-sm">
+            <div class="mb-4 p-4 bg-green-100 text-green-700 rounded-md">
                 {{ session('message') }}
             </div>
         @endif
 
         @if (session()->has('error'))
-            <div class="mb-4 p-3 bg-red-100 text-red-700 rounded-md text-sm">
+            <div class="mb-4 p-4 bg-red-100 text-red-700 rounded-md">
                 {{ session('error') }}
             </div>
         @endif
 
         <!-- Tab Navigation -->
-        <div class="border-b border-gray-200 mb-4 md:mb-6 overflow-x-auto">
-            <ul class="flex flex-nowrap md:flex-wrap text-sm font-medium text-center">
+        <div class="border-b border-gray-200 mb-6">
+            <ul class="flex flex-wrap -mb-px text-sm font-medium text-center">
                 <li class="mr-2">
                     <button wire:click="setActiveTab('account')"
-                        class="p-2 md:p-4 whitespace-nowrap {{ $activeTab === 'account' ? 'text-[#3085FE] border-b-2 border-[#3085FE]' : 'text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300' }}">
-                        Account
+                        class="inline-block p-4 {{ $activeTab === 'account' ? 'text-[#3085FE] border-b-2 border-[#3085FE]' : 'text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300' }}">
+                        Account Information
                     </button>
                 </li>
                 <li class="mr-2">
                     <button wire:click="setActiveTab('personal')"
-                        class="p-2 md:p-4 whitespace-nowrap {{ $activeTab === 'personal' ? 'text-[#3085FE] border-b-2 border-[#3085FE]' : 'text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300' }}">
-                        Personal
+                        class="inline-block p-4 {{ $activeTab === 'personal' ? 'text-[#3085FE] border-b-2 border-[#3085FE]' : 'text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300' }}">
+                        Personal Information
                     </button>
                 </li>
                 <li class="mr-2">
                     <button wire:click="setActiveTab('address')"
-                        class="p-2 md:p-4 whitespace-nowrap {{ $activeTab === 'address' ? 'text-[#3085FE] border-b-2 border-[#3085FE]' : 'text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300' }}">
+                        class="inline-block p-4 {{ $activeTab === 'address' ? 'text-[#3085FE] border-b-2 border-[#3085FE]' : 'text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300' }}">
                         Address
                     </button>
                 </li>
                 <li class="mr-2">
                     <button wire:click="setActiveTab('professional')"
-                        class="p-2 md:p-4 whitespace-nowrap {{ $activeTab === 'professional' ? 'text-[#3085FE] border-b-2 border-[#3085FE]' : 'text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300' }}">
-                        Professional
+                        class="inline-block p-4 {{ $activeTab === 'professional' ? 'text-[#3085FE] border-b-2 border-[#3085FE]' : 'text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300' }}">
+                        Professional Details
                     </button>
                 </li>
                 <li class="mr-2">
                     <button wire:click="setActiveTab('education')"
-                        class="p-2 md:p-4 whitespace-nowrap {{ $activeTab === 'education' ? 'text-[#3085FE] border-b-2 border-[#3085FE]' : 'text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300' }}">
+                        class="inline-block p-4 {{ $activeTab === 'education' ? 'text-[#3085FE] border-b-2 border-[#3085FE]' : 'text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300' }}">
                         Education
                     </button>
                 </li>
                 <li class="mr-2">
                     <button wire:click="setActiveTab('documents')"
-                        class="p-2 md:p-4 whitespace-nowrap {{ $activeTab === 'documents' ? 'text-[#3085FE] border-b-2 border-[#3085FE]' : 'text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300' }}">
-                        Documents
+                        class="inline-block p-4 {{ $activeTab === 'documents' ? 'text-[#3085FE] border-b-2 border-[#3085FE]' : 'text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300' }}">
+                        ID & Banking
                     </button>
                 </li>
                 <li class="mr-2">
                     <button wire:click="setActiveTab('insurance')"
-                        class="p-2 md:p-4 whitespace-nowrap {{ $activeTab === 'insurance' ? 'text-[#3085FE] border-b-2 border-[#3085FE]' : 'text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300' }}">
-                        Insurance
+                        class="inline-block p-4 {{ $activeTab === 'insurance' ? 'text-[#3085FE] border-b-2 border-[#3085FE]' : 'text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300' }}">
+                        BPJS & DLPK
                     </button>
                 </li>
-                <li class="mr-2">
+                <li>
                     <button wire:click="setActiveTab('contract')"
-                        class="p-2 md:p-4 whitespace-nowrap {{ $activeTab === 'contract' ? 'text-[#3085FE] border-b-2 border-[#3085FE]' : 'text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300' }}">
+                        class="inline-block p-4 {{ $activeTab === 'contract' ? 'text-[#3085FE] border-b-2 border-[#3085FE]' : 'text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300' }}">
                         Contract
                     </button>
                 </li>
                 <li>
                     <button wire:click="setActiveTab('size')"
-                        class="p-2 md:p-4 whitespace-nowrap {{ $activeTab === 'size' ? 'text-[#3085FE] border-b-2 border-[#3085FE]' : 'text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300' }}">
+                        class="inline-block p-4 {{ $activeTab === 'size' ? 'text-[#3085FE] border-b-2 border-[#3085FE]' : 'text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300' }}">
                         Size
                     </button>
                 </li>
             </ul>
         </div>
 
-        <form wire:submit.prevent="save" class="space-y-4 md:space-y-6" novalidate>
+        <form wire:submit.prevent="save" class="space-y-6" novalidate>
             <!-- Account Information Tab -->
             <div x-data class="{{ $activeTab === 'account' ? 'block' : 'hidden' }}">
-                <h2 class="text-lg md:text-xl font-semibold mb-4 text-gray-800">Account Information</h2>
+                <h2 class="text-xl font-semibold mb-4 text-gray-800">Account Information</h2>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
@@ -129,7 +129,7 @@
                     <div>
                         <label for="phone" class="block text-sm font-medium text-gray-700">No. Handphone<span
                                 class="text-red-500">*</span></label>
-                        <input type="text" wire:model.live="phone" id="phone"
+                        <input type="text" wire:model.live="phone" id="phone" placeholder="628292049291"
                             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#3085FE] focus:ring-[#3085FE]">
                         @error('phone')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -166,10 +166,11 @@
                 </div>
             </div>
 
+            <!-- Personal Information Tab -->
             <div class="{{ $activeTab === 'personal' ? 'block' : 'hidden' }}">
-                <h2 class="text-lg md:text-xl font-semibold mb-4 text-gray-800">Personal Information</h2>
+                <h2 class="text-xl font-semibold mb-4 text-gray-800">Personal Information</h2>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Jenis Kelamin</label>
                         <div class="flex space-x-5">
@@ -305,8 +306,7 @@
                     </div>
 
                     <div>
-                        <label for="mother_name" class="block text-sm font-medium text-gray-700">Nama Ibu
-                            Kandung</label>
+                        <label for="mother_name" class="block text-sm font-medium text-gray-700">Nama Ibu Kandung</label>
                         <input type="text" wire:model.live="mother_name" id="mother_name"
                             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#3085FE] focus:ring-[#3085FE]">
                         @error('mother_name')
@@ -315,6 +315,7 @@
                     </div>
                 </div>
 
+                {{--  --}}
                 <div class="mt-4 flex justify-between">
                     <button type="button" wire:click="setActiveTab('account')"
                         class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium">
@@ -327,8 +328,9 @@
                 </div>
             </div>
 
+            <!-- Address Tab -->
             <div class="{{ $activeTab === 'address' ? 'block' : 'hidden' }}">
-                <h2 class="text-lg md:text-xl font-semibold mb-4 text-gray-800">Address Information</h2>
+                <h2 class="text-xl font-semibold mb-4 text-gray-800">Address Information</h2>
 
                 <div class="grid grid-cols-1 gap-6">
                     <div>
@@ -420,18 +422,15 @@
                 </div>
             </div>
 
+            <!-- Professional Tab -->
             <div class="{{ $activeTab === 'professional' ? 'block' : 'hidden' }}">
                 <h2 class="text-xl font-semibold mb-4 text-gray-800">Professional Information</h2>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label for="bidang" class="block text-sm font-medium text-gray-700">Bidang</label>
-                        <select wire:model.live="bidang" id="bidang"
+                        <input type="text" wire:model.live="bidang" id="bidang"
                             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#3085FE] focus:ring-[#3085FE]">
-                            <option value="">Pilih Bidang</option>
-                            <option value="Retail">Retail</option>
-                            <option value="Corporate">Corporate</option>
-                        </select>
                         @error('bidang')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
@@ -439,29 +438,40 @@
 
                     <div>
                         <label for="sub_bidang" class="block text-sm font-medium text-gray-700">Sub-bidang</label>
-                        <select wire:model.live="sub_bidang" id="sub_bidang"
+                        <input type="text" wire:model.live="sub_bidang" id="sub_bidang"
                             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#3085FE] focus:ring-[#3085FE]">
-                            <option value="">Pilih Sub-bidang</option>
-                            <option value="Aktivasi">Aktivasi</option>
-                            <option value="Pemeliharaan">Pemeliharaan</option>
-                            <option value="Network Operation Center">Network Operation Center</option>
-                            <option value="Asset">Asset</option>
-                            <option value="Gudang">Gudang</option>
-                        </select>
                         @error('sub_bidang')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
                     </div>
 
                     <div>
+                        <label for="jabatan" class="block text-sm font-medium text-gray-700">Jabatan</label>
+                        <input type="text" wire:model.live="jabatan" id="jabatan"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#3085FE] focus:ring-[#3085FE]">
+                        @error('jabatan')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
                         <label for="tarif_sppd" class="block text-sm font-medium text-gray-700">Tarif SPPD</label>
-                        <p class="mt-1 block w-full rounded-md border-gray-500 shadow-sm bg-gray-100 focus:border-[#3085FE] focus:ring-[#3085FE] p-3">Rp. {{  $tarif_sppd }}</p>
+                        <input type="number" wire:model.live="tarif_sppd" id="tarif_sppd"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#3085FE] focus:ring-[#3085FE]">
+                        @error('tarif_sppd')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <div>
                         <label for="koefisien_lembur" class="block text-sm font-medium text-gray-700">Koefisien
                             Lembur</label>
-                            <p class="mt-1 block w-full rounded-md border-gray-500 shadow-sm bg-gray-100 focus:border-[#3085FE] focus:ring-[#3085FE] p-3">Rp. {{  $koefisien_lembur }}</p>
+                        <input type="number" wire:model.live="koefisien_lembur" id="koefisien_lembur"
+                            step="0.1"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#3085FE] focus:ring-[#3085FE]">
+                        @error('koefisien_lembur')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
                     </div>
                     <div>
                         <label for="office_id" class="block text-sm font-medium text-gray-700">Office <span
@@ -479,11 +489,11 @@
                     </div>
 
                     <div>
-                        <label for="user_type" class="block text-sm font-medium text-gray-700">Jabatan <span
+                        <label for="user_type" class="block text-sm font-medium text-gray-700">Role <span
                                 class="text-red-500">*</span></label>
                         <select wire:model.live="user_type" id="user_type"
                             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#3085FE] focus:ring-[#3085FE]">
-                            <option value="PEGAWAI">Pegawai</option>
+                            <option value="PEGAWAI">Employee</option>
                             <option value="MANAGER">Manager</option>
                         </select>
                         @error('user_type')
@@ -492,7 +502,7 @@
                     </div>
 
                     <div class="{{ $user_type === 'MANAGER' ? 'hidden' : '' }}">
-                        <label for="manager_id" class="block text-sm font-medium text-gray-700">Manager<span class="text-red-500">*</span></label>
+                        <label for="manager_id" class="block text-sm font-medium text-gray-700">Manager</label>
                         <select wire:model.live="manager_id" id="manager_id"
                             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#3085FE] focus:ring-[#3085FE]"
                             {{ $office_id ? '' : 'disabled' }}>
@@ -545,6 +555,7 @@
                 </div>
             </div>
 
+            <!-- Education Tab -->
             <div class="{{ $activeTab === 'education' ? 'block' : 'hidden' }}">
                 <h2 class="text-xl font-semibold mb-4 text-gray-800">Educational Information</h2>
 
@@ -603,6 +614,7 @@
                 </div>
             </div>
 
+            <!-- Documents Tab -->
             <div class="{{ $activeTab === 'documents' ? 'block' : 'hidden' }}">
                 <h2 class="text-xl font-semibold mb-4 text-gray-800">ID & Banking Information</h2>
 

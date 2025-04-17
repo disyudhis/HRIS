@@ -18,6 +18,7 @@ return new class extends Migration
             $table->time('start_time');
             $table->time('end_time');
             $table->enum('shift_type', ['morning', 'afternoon', 'night'])->default('morning');
+            $table->boolean('is_checked')->nullable();
             $table->text('notes')->nullable();
             $table->foreignId('created_by')->constrained('users')->onDelete('cascade');
             $table->timestamps();

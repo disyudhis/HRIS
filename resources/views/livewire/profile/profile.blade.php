@@ -5,18 +5,8 @@
             <!-- Profile Photo -->
             <div class="relative mb-4">
                 <div class="w-32 h-32 rounded-full overflow-hidden border-2 border-white shadow-md">
-                    <img src="{{ $user->profile_photo_url }}" alt="{{ $user->name }}" class="w-full h-full object-cover">
+                    <img src="{{ $user->profile_photo_path }}" alt="{{ $user->name }}" class="w-full h-full object-cover">
                 </div>
-                <a href="{{ route('profile.edit') }}"
-                    class="absolute bottom-0 right-0 bg-[#3085FE] text-white p-2 rounded-full shadow-md">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                </a>
             </div>
 
             <!-- User Info -->
@@ -31,7 +21,7 @@
 
             <!-- Menu Items -->
             <div class="w-full space-y-4">
-                <a href="{{ route('profile.show') }}"
+                {{-- <a href="{{ route('profile.show') }}"
                     class="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
                     <div class="flex items-center">
                         <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center mr-3">
@@ -47,7 +37,7 @@
                         viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                     </svg>
-                </a>
+                </a> --}}
 
                 {{-- <a href="{{ route('profile.settings') }}"
                     class="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
@@ -191,7 +181,7 @@
                         <div class="flex flex-col items-center mb-8">
                             <div class="relative mb-4">
                                 <div class="w-40 h-40 rounded-full overflow-hidden border-4 border-white shadow-md">
-                                    <img src="{{ $user->profile_photo_url }}" alt="{{ $user->name }}"
+                                    <img src="{{ $user->profile_photo_path }}" alt="{{ $user->name }}"
                                         class="w-full h-full object-cover">
                                 </div>
 
@@ -209,17 +199,17 @@
                         </div>
 
                         <div class="space-y-2">
-
-
-                            <a href="{{ route('profile.edit') }}"
-                                class="flex items-center px-4 py-3 rounded-lg {{ request()->routeIs('profile.edit') ? 'bg-[#3085FE] text-white' : 'text-gray-700 hover:bg-gray-100' }}">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none"
-                                    viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                </svg>
-                                Edit Profile
-                            </a>
+                            @if (!Auth::user()->isAdmin())
+                                <a href="{{ route('profile.edit') }}"
+                                    class="flex items-center px-4 py-3 rounded-lg {{ request()->routeIs('profile.edit') ? 'bg-[#3085FE] text-white' : 'text-gray-700 hover:bg-gray-100' }}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                    Edit Profile
+                                </a>
+                            @endif
 
                             {{-- <a href="{{ route('profile.settings') }}"
                                 class="flex items-center px-4 py-3 rounded-lg {{ request()->routeIs('profile.settings') ? 'bg-[#3085FE] text-white' : 'text-gray-700 hover:bg-gray-100' }}">
@@ -331,8 +321,13 @@
                             <h2 class="text-2xl font-bold text-gray-900 mb-6">Account Information</h2>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div class="bg-gray-50 rounded-xl p-4">
+                                    <h3 class="text-sm font-medium text-gray-500 mb-2">Username</h3>
+                                    <p class="text-gray-900 font-medium">{{ $user->name ?? 'Not set' }}</p>
+                                </div>
+
+                                <div class="bg-gray-50 rounded-xl p-4">
                                     <h3 class="text-sm font-medium text-gray-500 mb-2">Full Name</h3>
-                                    <p class="text-gray-900 font-medium">{{ $user->name }}</p>
+                                    <p class="text-gray-900 font-medium">{{ $user->full_name ?? 'Not set' }}</p>
                                 </div>
 
                                 <div class="bg-gray-50 rounded-xl p-4">
@@ -356,13 +351,18 @@
                             <h2 class="text-2xl font-bold text-gray-900 mb-6">Work Information</h2>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div class="bg-gray-50 rounded-xl p-4">
-                                    <h3 class="text-sm font-medium text-gray-500 mb-2">Department</h3>
-                                    <p class="text-gray-900 font-medium">{{ $user->department ?? 'Not set' }}</p>
+                                    <h3 class="text-sm font-medium text-gray-500 mb-2">Bidang</h3>
+                                    <p class="text-gray-900 font-medium">{{ $user->user_details->bidang ?? 'Not set' }}</p>
+                                </div>
+
+                                <div class="bg-gray-50 rounded-xl p-4">
+                                    <h3 class="text-sm font-medium text-gray-500 mb-2">Sub-bidang</h3>
+                                    <p class="text-gray-900 font-medium">{{ $user->user_details->sub_bidang ?? 'Not set' }}</p>
                                 </div>
 
                                 <div class="bg-gray-50 rounded-xl p-4">
                                     <h3 class="text-sm font-medium text-gray-500 mb-2">Position</h3>
-                                    <p class="text-gray-900 font-medium">{{ $user->position ?? 'Not set' }}</p>
+                                    <p class="text-gray-900 font-medium">{{ $user->user_type ?? 'Not set' }}</p>
                                 </div>
 
                                 <div class="bg-gray-50 rounded-xl p-4">
@@ -371,7 +371,7 @@
                                     </p>
                                 </div>
 
-                                <div class="bg-gray-50 rounded-xl p-4">
+                                <div x-show="$wire.user_type === 'PEGAWAI'" class="bg-gray-50 rounded-xl p-4">
                                     <h3 class="text-sm font-medium text-gray-500 mb-2">Manager</h3>
                                     <p class="text-gray-900 font-medium">{{ $user->manager->name ?? 'Not assigned' }}
                                     </p>
@@ -379,39 +379,50 @@
                             </div>
                         </div>
 
-                        <div>
+                        <div class="mb-8">
                             <h2 class="text-2xl font-bold text-gray-900 mb-6">Personal Information</h2>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div class="bg-gray-50 rounded-xl p-4">
                                     <h3 class="text-sm font-medium text-gray-500 mb-2">Date of Birth</h3>
                                     <p class="text-gray-900 font-medium">
-                                        {{ $user->date_of_birth ? $user->date_of_birth->format('F d, Y') : 'Not set' }}
+                                        {{ $user->user_details->birthday ? $user->user_details->birthday->format('F d, Y') : 'Not set' }}
                                     </p>
                                 </div>
 
                                 <div class="bg-gray-50 rounded-xl p-4">
-                                    <h3 class="text-sm font-medium text-gray-500 mb-2">Emergency Contact</h3>
-                                    <p class="text-gray-900 font-medium">{{ $user->emergency_contact ?? 'Not set' }}
-                                    </p>
+                                    <h3 class="text-sm font-medium text-gray-500 mb-2">Gender</h3>
+                                    <p class="text-gray-900 font-medium">{{ $user->user_details->gender ?? 'Not set' }}</p>
+                                </div>
+
+                                <div class="bg-gray-50 rounded-xl p-4">
+                                    <h3 class="text-sm font-medium text-gray-500 mb-2">Blood Type</h3>
+                                    <p class="text-gray-900 font-medium">{{ $user->user_details->blood_type ?? 'Not set' }}</p>
+                                </div>
+
+                                <div class="bg-gray-50 rounded-xl p-4">
+                                    <h3 class="text-sm font-medium text-gray-500 mb-2">Marital Status</h3>
+                                    <p class="text-gray-900 font-medium">{{ $user->user_details->marital_status ?? 'Not set' }}</p>
                                 </div>
 
                                 <div class="bg-gray-50 rounded-xl p-4 md:col-span-2">
                                     <h3 class="text-sm font-medium text-gray-500 mb-2">Address</h3>
-                                    <p class="text-gray-900 font-medium">{{ $user->address ?? 'Not set' }}</p>
+                                    <p class="text-gray-900 font-medium">{{ $user->user_details->address ?? 'Not set' }}</p>
                                 </div>
                             </div>
                         </div>
 
                         <div class="mt-8">
-                            <a href="{{ route('profile.edit') }}"
-                                class="inline-flex items-center px-6 py-3 bg-[#3085FE] text-white rounded-lg font-medium">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none"
-                                    viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                </svg>
-                                Edit Profile
-                            </a>
+                            @if (!Auth::user()->isAdmin())
+                                <a href="{{ route('profile.edit') }}"
+                                    class="inline-flex items-center px-6 py-3 bg-[#3085FE] text-white rounded-lg font-medium">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                    Edit Profile
+                                </a>
+                            @endif
                         </div>
                     </div>
                 </div>

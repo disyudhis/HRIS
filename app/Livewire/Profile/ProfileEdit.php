@@ -5,45 +5,212 @@ namespace App\Livewire\Profile;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Illuminate\Support\Facades\Auth;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 
 class ProfileEdit extends Component
 {
     use WithFileUploads;
 
+    // User information
     public $user;
+    public $userDetails;
+    public $user_type;
+
+    // Personal Information
     public $name;
+    public $full_name;
     public $email;
     public $phone;
-    public $position;
-    public $department;
-    public $address;
-    public $emergency_contact;
-    public $date_of_birth;
+    public $employee_id;
     public $photo;
 
+    // Additional Information
+    public $gender;
+    public $birthday;
+    public $religion;
+    public $birth_place;
+    public $marital_status;
+    public $wedding_date;
+    public $child;
+    public $mother_name;
+    public $blood_type;
+
+    // Contract Details (mostly readonly)
+    public $bidang;
+    public $sub_bidang;
+    public $office_id;
+    public $manager_id;
+    public $tarif_sppd;
+    public $koefisien_lembur;
+    public $is_shifting;
+    public $is_magang;
+
+    // Address
+    public $address;
+    public $provinsi;
+    public $kota;
+    public $kecamatan;
+    public $kelurahan;
+    public $rt;
+    public $rw;
+    public $kode_pos;
+
+    // Account/Finance
+    public $ktp;
+    public $npwp;
+    public $kk;
+    public $bank;
+    public $nama_rekening;
+    public $nomor_rekening;
+    public $bpjs;
+    public $nominal_bpjs;
+    public $bpjs_active_date;
+    public $dlpk;
+    public $cif;
+    public $nominal_dlpk;
+    public $dlpk_active_date;
+
+    // Education
+    public $pendidikan_terakhir;
+    public $jurusan;
+    public $gelar;
+
+    // Size
+    public $weight;
+    public $height;
+    public $ukuran_baju;
+
     protected $rules = [
+        // Personal Information
         'name' => 'required|string|max:255',
+        'full_name' => 'nullable|string|max:255',
         'email' => 'required|email|max:255',
         'phone' => 'nullable|string|max:20',
-        'position' => 'nullable|string|max:100',
-        'department' => 'nullable|string|max:100',
+        'employee_id' => 'nullable|string|max:100',
+        'photo' => 'nullable|image|max:2048',
+
+        // Additional Information
+        'gender' => 'nullable|string|in:laki-laki,perempuan',
+        'birthday' => 'nullable|date',
+        'religion' => 'nullable|string',
+        'birth_place' => 'nullable|string|max:255',
+        'marital_status' => 'nullable|string|in:lajang,menikah,janda/duda',
+        'wedding_date' => 'nullable|date|required_if:marital_status,menikah',
+        'child' => 'nullable|integer|min:0',
+        'mother_name' => 'nullable|string|max:255',
+        'blood_type' => 'nullable|string|in:A,B,AB,O',
+
+        // Address
         'address' => 'nullable|string|max:500',
-        'emergency_contact' => 'nullable|string|max:255',
-        'date_of_birth' => 'nullable|date',
-        'photo' => 'nullable|image|max:1024',
+        'provinsi' => 'nullable|string|max:100',
+        'kota' => 'nullable|string|max:100',
+        'kecamatan' => 'nullable|string|max:100',
+        'kelurahan' => 'nullable|string|max:100',
+        'rt' => 'nullable|string|max:10',
+        'rw' => 'nullable|string|max:10',
+        'kode_pos' => 'nullable|string|max:10',
+
+        // Account/Finance
+        'ktp' => 'nullable|string|max:20',
+        'npwp' => 'nullable|string|max:30',
+        'kk' => 'nullable|string|max:20',
+        'bank' => 'nullable|string|max:100',
+        'nama_rekening' => 'nullable|string|max:255',
+        'nomor_rekening' => 'nullable|string|max:50',
+        'bpjs' => 'nullable|string|max:50',
+        'nominal_bpjs' => 'nullable|numeric',
+        'bpjs_active_date' => 'nullable|date',
+        'dlpk' => 'nullable|string|max:50',
+        'cif' => 'nullable|string|max:50',
+        'nominal_dlpk' => 'nullable|numeric',
+        'dlpk_active_date' => 'nullable|date',
+
+        // Education
+        'pendidikan_terakhir' => 'nullable|string|max:100',
+        'jurusan' => 'nullable|string|max:100',
+        'gelar' => 'nullable|string|max:100',
+
+        // Size
+        'weight' => 'nullable|numeric|min:0',
+        'height' => 'nullable|numeric|min:0',
+        'ukuran_baju' => 'nullable|string|in:XS,S,M,L,XL,XXL,XXXL',
     ];
 
     public function mount()
     {
         $this->user = Auth::user();
+        $this->userDetails = $this->user->userDetails ?? null;
+        $this->user_type = $this->user->user_type ?? null;
+
+        // Load user data
+        $this->loadUserData();
+    }
+
+    protected function loadUserData()
+    {
+        // Personal Information
         $this->name = $this->user->name;
+        $this->full_name = $this->user->full_name;
         $this->email = $this->user->email;
         $this->phone = $this->user->phone;
-        $this->position = $this->user->position;
-        $this->department = $this->user->department;
-        $this->address = $this->user->address;
-        $this->emergency_contact = $this->user->emergency_contact;
-        $this->date_of_birth = $this->user->date_of_birth ? $this->user->date_of_birth->format('Y-m-d') : null;
+        $this->employee_id = $this->user->employee_id;
+
+        // Additional Information
+        if ($this->userDetails) {
+            $this->gender = $this->userDetails->gender;
+            $this->birthday = $this->userDetails->birthday ? $this->userDetails->birthday->format('Y-m-d') : null;
+            $this->religion = $this->userDetails->religion;
+            $this->birth_place = $this->userDetails->birth_place;
+            $this->marital_status = $this->userDetails->marital_status;
+            $this->wedding_date = $this->userDetails->wedding_date ? $this->userDetails->wedding_date->format('Y-m-d') : null;
+            $this->child = $this->userDetails->child;
+            $this->mother_name = $this->userDetails->mother_name;
+            $this->blood_type = $this->userDetails->blood_type;
+
+            // Contract Details (Read Only)
+            $this->bidang = $this->userDetails->bidang;
+            $this->sub_bidang = $this->userDetails->sub_bidang;
+            $this->jabatan = $this->userDetails->jabatan;
+            $this->tarif_sppd = $this->userDetails->tarif_sppd;
+            $this->koefisien_lembur = $this->userDetails->koefisien_lembur;
+            $this->is_shifting = $this->userDetails->is_shifting;
+            $this->is_magang = $this->userDetails->is_magang;
+
+            // Address
+            $this->address = $this->userDetails->address;
+            $this->provinsi = $this->userDetails->provinsi;
+            $this->kota = $this->userDetails->kota;
+            $this->kecamatan = $this->userDetails->kecamatan;
+            $this->kelurahan = $this->userDetails->kelurahan;
+            $this->rt = $this->userDetails->rt;
+            $this->rw = $this->userDetails->rw;
+            $this->kode_pos = $this->userDetails->kode_pos;
+
+            // Account/Finance
+            $this->ktp = $this->userDetails->ktp;
+            $this->npwp = $this->userDetails->npwp;
+            $this->kk = $this->userDetails->kk;
+            $this->bank = $this->userDetails->bank;
+            $this->nama_rekening = $this->userDetails->nama_rekening;
+            $this->nomor_rekening = $this->userDetails->nomor_rekening;
+            $this->bpjs = $this->userDetails->bpjs;
+            $this->nominal_bpjs = $this->userDetails->nominal_bpjs;
+            $this->bpjs_active_date = $this->userDetails->bpjs_active_date ? $this->userDetails->bpjs_active_date->format('Y-m-d') : null;
+            $this->dlpk = $this->userDetails->dlpk;
+            $this->cif = $this->userDetails->cif;
+            $this->nominal_dlpk = $this->userDetails->nominal_dlpk;
+            $this->dlpk_active_date = $this->userDetails->dlpk_active_date ? $this->userDetails->dlpk_active_date->format('Y-m-d') : null;
+
+            // Education
+            $this->pendidikan_terakhir = $this->userDetails->pendidikan_terakhir;
+            $this->jurusan = $this->userDetails->jurusan;
+            $this->gelar = $this->userDetails->gelar;
+
+            // Size
+            $this->weight = $this->userDetails->weight;
+            $this->height = $this->userDetails->height;
+            $this->ukuran_baju = $this->userDetails->ukuran_baju;
+        }
     }
 
     public function updateProfile()
@@ -55,31 +222,106 @@ class ProfileEdit extends Component
             'email' => 'unique:users,email,' . $this->user->id,
         ]);
 
+        // Update User model
         $this->user->name = $this->name;
+        $this->user->full_name = $this->full_name;
         $this->user->email = $this->email;
         $this->user->phone = $this->phone;
-        $this->user->position = $this->position;
-        $this->user->department = $this->department;
-        $this->user->address = $this->address;
-        $this->user->emergency_contact = $this->emergency_contact;
-        $this->user->date_of_birth = $this->date_of_birth;
+        $this->user->employee_id = $this->employee_id;
 
+        // Handle photo upload to Cloudinary
         if ($this->photo) {
-            // Delete old photo if exists
-            if ($this->user->profile_photo_path) {
-                Storage::delete('public/' . $this->user->profile_photo_path);
+            if ($this->user->profile_photo_public_id) {
+                Cloudinary::uploadApi()->destroy($this->user->profile_photo_public_id);
             }
-
-            // Store new photo
-            $path = $this->photo->store('profile-photos', 'public');
-            $this->user->profile_photo_path = $path;
+            $profilePhotoUrl = $this->uploadPhotoToCloudinary($this->photo);
+            if ($profilePhotoUrl) {
+                $this->user->profile_photo_path = $profilePhotoUrl['url'];
+                $this->user->profile_photo_public_id = $profilePhotoUrl['public_id'];
+            }
         }
 
         $this->user->save();
 
-        session()->flash('message', 'Profile updated successfully.');
+        // Update or create UserDetails
+        $detailsData = [
+            // Additional Information
+            'gender' => $this->gender,
+            'birthday' => $this->birthday,
+            'religion' => $this->religion,
+            'birth_place' => $this->birth_place,
+            'marital_status' => $this->marital_status,
+            'wedding_date' => $this->wedding_date,
+            'child' => $this->child,
+            'mother_name' => $this->mother_name,
+            'blood_type' => $this->blood_type,
 
-        return redirect()->back();
+            // Address
+            'address' => $this->address,
+            'provinsi' => $this->provinsi,
+            'kota' => $this->kota,
+            'kecamatan' => $this->kecamatan,
+            'kelurahan' => $this->kelurahan,
+            'rt' => $this->rt,
+            'rw' => $this->rw,
+            'kode_pos' => $this->kode_pos,
+
+            // Account/Finance
+            'ktp' => $this->ktp,
+            'npwp' => $this->npwp,
+            'kk' => $this->kk,
+            'bank' => $this->bank,
+            'nama_rekening' => $this->nama_rekening,
+            'nomor_rekening' => $this->nomor_rekening,
+            'bpjs' => $this->bpjs,
+            'nominal_bpjs' => $this->nominal_bpjs,
+            'bpjs_active_date' => $this->bpjs_active_date,
+            'dlpk' => $this->dlpk,
+            'cif' => $this->cif,
+            'nominal_dlpk' => $this->nominal_dlpk,
+            'dlpk_active_date' => $this->dlpk_active_date,
+
+            // Education
+            'pendidikan_terakhir' => $this->pendidikan_terakhir,
+            'jurusan' => $this->jurusan,
+            'gelar' => $this->gelar,
+
+            // Size
+            'weight' => $this->weight,
+            'height' => $this->height,
+            'ukuran_baju' => $this->ukuran_baju,
+        ];
+
+        if ($this->userDetails) {
+            $this->user->user_details()->update($detailsData);
+        } else {
+            $this->user->user_details()->create($detailsData);
+        }
+
+        session()->flash('message', 'Profile successfully updated.');
+
+        return redirect()->route('profile.edit');
+    }
+
+    protected function uploadPhotoToCloudinary($photo)
+    {
+        try {
+            $uploadedFileUrl = Cloudinary::uploadApi()->upload($photo->getRealPath(), [
+                'folder' => 'profile_photos',
+                'public_id' => 'user_' . $this->user->id . '_' . time(),
+                'overwrite' => true,
+                'resource_type' => 'image',
+                'transformation' => [['width' => 300, 'height' => 300, 'crop' => 'fill', 'gravity' => 'face'], ['quality' => 'auto']],
+            ]);
+
+            $toArray = $uploadedFileUrl->getArrayCopy();
+
+            return $toArray;
+        } catch (\Exception $e) {
+            \Log::error('Cloudinary upload failed: ' . $e->getMessage());
+            session()->flash('error', 'Failed to upload profile photo: ' . $e->getMessage());
+            return null;
+        }
     }
 
     public function render()

@@ -45,7 +45,7 @@ class ScheduleForm extends Component
     public function mount($schedule = null, $date = null, $employeeId = null)
     {
         // Load departments for filtering employees
-        $this->departments = User::where('manager_id', Auth::id())->whereNotNull('department')->select('department')->distinct()->pluck('department')->toArray();
+        $this->loadDepartments();
 
         $this->loadEmployees();
 
@@ -70,6 +70,21 @@ class ScheduleForm extends Component
         if ($employeeId) {
             $this->selectedEmployees = [$employeeId];
         }
+    }
+
+    public function loadDepartments(){
+        $this->departments = User::where('manager_id', Auth::id())
+            ->with('user_details')
+            ->whereHas('user_details', function ($query) {
+                $query->whereNotNull('bidang');
+            })
+            ->get()
+            ->map(function ($user) {
+                return $user->user_details->bidang;
+            })
+            ->unique()
+            ->values()
+            ->toArray();
     }
 
     public function loadEmployees()
