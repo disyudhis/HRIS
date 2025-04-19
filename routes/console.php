@@ -11,3 +11,4 @@ use Illuminate\Support\Facades\Artisan;
 // })->purpose('Display an inspiring quote');
 
 Schedule::command('app:auto-check-out')->everyFourHours()->evenInMaintenanceMode();
+Schedule::command('app:auto-absent')->everyFourHours()->evenInMaintenanceMode();

@@ -1,0 +1,22 @@
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home/username/public_html/
+    - /bin/mkdir -p $DEPLOYPATH
+    - /bin/cp -R * $DEPLOYPATH
+    - /bin/cp -R .htaccess $DEPLOYPATH
+    - /bin/cp -R .env* $DEPLOYPATH
+    - /bin/cp -R .git* $DEPLOYPATH
+    - /bin/mkdir -p $DEPLOYPATH/storage/framework/sessions
+    - /bin/mkdir -p $DEPLOYPATH/storage/framework/views
+    - /bin/mkdir -p $DEPLOYPATH/storage/framework/cache
+    - /bin/mkdir -p $DEPLOYPATH/bootstrap/cache
+    - export COMPOSERPATH=/opt/cpanel/composer/bin/composer
+    - cd $DEPLOYPATH && $COMPOSERPATH install --no-dev --optimize-autoloader
+    - cd $DEPLOYPATH && php artisan config:cache
+    - cd $DEPLOYPATH && php artisan route:cache
+    - cd $DEPLOYPATH && php artisan view:cache
+    - cd $DEPLOYPATH && php artisan storage:link
+    - cd $DEPLOYPATH && php artisan schedule:work
+    - cd $DEPLOYPATH && chmod -R 755 storage bootstrap/cache public
+    - cd $DEPLOYPATH && find storage bootstrap/cache -type d -exec chmod 775 {} \;
+    - cd $DEPLOYPATH && find storage bootstrap/cache -type f -exec chmod 664 {} \;
