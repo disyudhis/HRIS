@@ -1,7 +1,7 @@
 deployment:
   tasks:
     - export DEPLOYPATH=/home/zjbdurdj/public_html/
-    - /bin/mkdir -p $DEPLOYPATH
+     - /bin/mkdir -p $DEPLOYPATH
     - /bin/cp -R * $DEPLOYPATH
     - /bin/cp -R .htaccess $DEPLOYPATH
     - /bin/cp -R .env* $DEPLOYPATH
@@ -16,7 +16,6 @@ deployment:
     - cd $DEPLOYPATH && php artisan route:cache
     - cd $DEPLOYPATH && php artisan view:cache
     - cd $DEPLOYPATH && php artisan storage:link
-    - cd $DEPLOYPATH && php artisan schedule:work
     - cd $DEPLOYPATH && chmod -R 755 storage bootstrap/cache public
     - cd $DEPLOYPATH && find storage bootstrap/cache -type d -exec chmod 775 {} \;
     - cd $DEPLOYPATH && find storage bootstrap/cache -type f -exec chmod 664 {} \;
