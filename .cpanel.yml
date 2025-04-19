@@ -1,4 +1,5 @@
+---
 deployment:
   tasks:
     - export DEPLOYPATH=/home/zjbdurdj/public_html/
-    - /bin/cp -R HRIS $DEPLOYPATH
+    - /bin/cp -R images $DEPLOYPATH
