@@ -31,7 +31,7 @@ class UserFactory extends Factory
             'full_name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
-            'user_type' => fake()->randomElement(['PEGAWAI', 'ADMIN', 'MANAGER']),
+            'user_type' => 'ADMIN',
             'employee_id' => 'EMP' . fake()->unique()->randomNumber(5),
             'password' => static::$password ??= Hash::make('password'),
             'two_factor_secret' => null,

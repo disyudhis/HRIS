@@ -71,6 +71,7 @@ class CheckIn extends Component
     public function loadTodayAttendance()
     {
         $this->todayAttendance = Attendance::where('user_id', Auth::id())->whereDate('check_in_time', Carbon::today())->first();
+        // dd($this->todayAttendance);
     }
 
     public function loadTodaySchedule()
@@ -182,6 +183,7 @@ class CheckIn extends Component
 
               // Reload attendance data
             $this->loadTodayAttendance();
+        
 
             $this->dispatch('checkInSuccess');
         } catch (\Exception $e) {

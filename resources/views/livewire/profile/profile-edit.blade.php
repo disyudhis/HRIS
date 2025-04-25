@@ -130,8 +130,8 @@
                             <div>
                                 <label for="employee_id" class="block text-sm font-medium text-gray-700">No.
                                     Induk</label>
-                                <input type="text" wire:model="employee_id" id="employee_id"
-                                    class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm focus:border-[#3085FE] focus:ring-[#3085FE] h-12 px-4">
+                                <input type="text" wire:model="employee_id" id="employee_id" readonly
+                                    class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm bg-gray-100 focus:border-[#3085FE] focus:ring-[#3085FE] h-12 px-4">
                                 @error('employee_id')
                                     <span class="text-red-500 text-sm">{{ $message }}</span>
                                 @enderror

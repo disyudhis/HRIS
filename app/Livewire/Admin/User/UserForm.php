@@ -25,8 +25,6 @@ class UserForm extends Component
     public $password_confirmation;
     public $user_type = 'PEGAWAI';
     public $manager_id;
-    public $position;
-    public $department;
     public $employee_id;
     public $office_id;
 
@@ -106,8 +104,6 @@ class UserForm extends Component
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($this->userId)],
             'user_type' => 'required|in:MANAGER,PEGAWAI',
             'manager_id' => 'nullable|exists:users,id',
-            'position' => 'nullable|string|max:255',
-            'department' => 'nullable|string|max:255',
             'employee_id' => ['nullable', 'string', 'max:255', Rule::unique('users', 'employee_id')->ignore($this->userId)],
             'office_id' => 'required|exists:offices,id',
         ];
@@ -200,8 +196,7 @@ class UserForm extends Component
             $this->email = $user->email;
             $this->user_type = $user->user_type;
             $this->manager_id = $user->manager_id;
-            $this->position = $user->position;
-            $this->department = $user->department;
+            $this->phone = $user->phone;
             $this->employee_id = $user->employee_id;
             $this->office_id = $user->office_id;
 
@@ -358,8 +353,6 @@ class UserForm extends Component
                 $user->email = $this->email;
                 $user->user_type = $this->user_type;
                 $user->manager_id = $this->manager_id;
-                $user->position = $this->position;
-                $user->department = $this->department;
                 $user->employee_id = $this->employee_id;
                 $user->office_id = $this->office_id;
 
@@ -384,8 +377,6 @@ class UserForm extends Component
                     'phone' => $this->phone,
                     'full_name' => $this->full_name,
                     'manager_id' => $this->manager_id,
-                    'position' => $this->position,
-                    'department' => $this->department,
                     'employee_id' => $this->employee_id,
                     'office_id' => $this->office_id,
                 ]);

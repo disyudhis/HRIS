@@ -1,11 +1,26 @@
 <aside class="hidden md:flex fixed left-0 top-0 bottom-0 w-64 flex-col bg-white border-r border-gray-200 z-40">
+    <!-- Logo & App Name -->
     <div class="p-6 flex items-center">
         <x-application-logo class="w-10 h-10" />
         <h1 class="ml-3 text-xl font-bold text-[#101317]">HR Attendee</h1>
     </div>
 
+    <!-- Navigation Menu -->
     <nav class="flex-1 px-4 py-6 space-y-1">
-        <!-- Admin Only Navigation -->
+        <!-- Employee Default Navigation -->
+        @if (!Auth::user()->isAdmin())
+            <a href="{{ route('dashboard.check-in') }}"
+                class="flex items-center px-4 py-3 rounded-lg {{ request()->routeIs('dashboard.check-in') ? 'bg-[#3085FE] text-white' : 'text-gray-700 hover:bg-gray-100' }}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                Attendee
+            </a>
+        @endif
+
+        <!-- Admin Navigation Links -->
         @if (Auth::user()->isAdmin())
             <a href="{{ route('admin.users.index') }}"
                 class="flex items-center px-4 py-3 rounded-lg {{ request()->routeIs('admin.users.*') ? 'bg-[#3085FE] text-white' : 'text-gray-700 hover:bg-gray-100' }}">
@@ -26,39 +41,19 @@
                 </svg>
                 Offices
             </a>
-
-            {{-- <a href="{{ route('admin.departments') }}"
-            class="flex items-center px-4 py-3 rounded-lg {{ request()->routeIs('admin.departments') ? 'bg-[#3085FE] text-white' : 'text-gray-700 hover:bg-gray-100' }}">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24"
-                stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-            </svg>
-            Departments
-        </a>
-
-        <a href="{{ route('admin.reports') }}"
-            class="flex items-center px-4 py-3 rounded-lg {{ request()->routeIs('admin.reports') ? 'bg-[#3085FE] text-white' : 'text-gray-700 hover:bg-gray-100' }}">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24"
-                stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            Reports
-        </a> --}}
         @endif
 
-        <!-- Manager Only Navigation -->
+        <!-- Manager Navigation Links -->
         @if (Auth::user()->isManager())
-            {{-- <a href="{{ route('manager.team') }}"
-                class="flex items-center px-4 py-3 rounded-lg {{ request()->routeIs('manager.team*') ? 'bg-[#3085FE] text-white' : 'text-gray-700 hover:bg-gray-100' }}">
+            <a href="{{ route('manager.approvals.business-trips.index') }}"
+                class="flex items-center px-4 py-3 rounded-lg {{ request()->routeIs('manager.approvals.business-trips.index') ? 'bg-[#3085FE] text-white' : 'text-gray-700 hover:bg-gray-100' }}">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24"
                     stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                My Team
-            </a> --}}
+                SPPD
+            </a>
 
             <a href="{{ route('manager.approvals.overtime.index') }}"
                 class="flex items-center px-4 py-3 rounded-lg {{ request()->routeIs('manager.approvals.overtime.index') ? 'bg-[#3085FE] text-white' : 'text-gray-700 hover:bg-gray-100' }}">
@@ -70,16 +65,6 @@
                 Overtime
             </a>
 
-            <a href="{{ route('manager.approvals.business-trips.index') }}"
-                class="flex items-center px-4 py-3 rounded-lg {{ request()->routeIs('manager.approvals.business-trips.index') ? 'bg-[#3085FE] text-white' : 'text-gray-700 hover:bg-gray-100' }}">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24"
-                    stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                SPPD
-            </a>
-
             <a href="{{ route('manager.schedules.index') }}"
                 class="flex items-center px-4 py-3 rounded-lg {{ request()->routeIs('manager.schedules.*') ? 'bg-[#3085FE] text-white' : 'text-gray-700 hover:bg-gray-100' }}">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24"
@@ -89,31 +74,9 @@
                 </svg>
                 Schedule
             </a>
-
-            {{-- <a href="{{ route('manager.reports') }}"
-                class="flex items-center px-4 py-3 rounded-lg {{ request()->routeIs('manager.reports') ? 'bg-[#3085FE] text-white' : 'text-gray-700 hover:bg-gray-100' }}">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24"
-                    stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                Reports
-            </a> --}}
         @endif
 
-        <!-- Employee Navigation -->
-        @if (!Auth::user()->isAdmin())
-            <a href="{{ route('dashboard.check-in') }}"
-                class="flex items-center px-4 py-3 rounded-lg {{ request()->routeIs('dashboard.check-in') ? 'bg-[#3085FE] text-white' : 'text-gray-700 hover:bg-gray-100' }}">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24"
-                    stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-                Check In
-            </a>
-        @endif
-
+        <!-- Employee Schedule Link -->
         @if (Auth::user()->isEmployee())
             <a href="{{ route('employee.schedules.index') }}"
                 class="flex items-center px-4 py-3 rounded-lg {{ request()->routeIs('employee.schedules.*') ? 'bg-[#3085FE] text-white' : 'text-gray-700 hover:bg-gray-100' }}">
@@ -125,40 +88,23 @@
                 Schedule
             </a>
         @endif
-
-        {{-- <a href="{{ route('history') }}"
-            class="flex items-center px-4 py-3 rounded-lg {{ request()->routeIs('history') ? 'bg-[#3085FE] text-white' : 'text-gray-700 hover:bg-gray-100' }}">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24"
-                stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            Attendance History
-        </a>
-
-        <a href="{{ route('profile.edit') }}"
-            class="flex items-center px-4 py-3 rounded-lg {{ request()->routeIs('profile.edit') ? 'bg-[#3085FE] text-white' : 'text-gray-700 hover:bg-gray-100' }}">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24"
-                stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-            Profile Settings
-        </a> --}}
     </nav>
 
+    <!-- User Profile Section -->
     <div class="p-4 border-t border-gray-200">
         <div x-data="{ open: false, showLogoutModal: false }" class="relative">
+            <!-- User Profile Button -->
             <button @click="open = !open"
                 class="flex items-center w-full p-2 rounded-lg hover:bg-gray-100 transition-colors">
-                <div class="w-10 h-10 rounded-full bg-[#3085FE] flex items-center justify-center text-white mr-3">
+                <div
+                    class="w-10 h-10 flex-shrink-0 rounded-full bg-[#3085FE] flex items-center justify-center text-white mr-3">
                     {{ Auth::user()->name[0] ?? 'U' }}
                 </div>
-                <div class="flex-1 text-left">
-                    <div class="font-medium text-gray-900">{{ Auth::user()->name ?? 'User' }}</div>
-                    <div class="text-xs text-gray-500 truncate">{{ ucfirst(Auth::user()->role) }}</div>
+                <div class="flex-1 min-w-0">
+                    <div class="font-medium text-gray-900 truncate">{{ Auth::user()->name ?? 'User' }}</div>
+                    <div class="text-xs text-gray-500 truncate">{{ ucfirst(Auth::user()->user_type) }}</div>
                 </div>
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" viewBox="0 0 20 20"
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0 text-gray-400" viewBox="0 0 20 20"
                     fill="currentColor">
                     <path fill-rule="evenodd"
                         d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
@@ -166,25 +112,30 @@
                 </svg>
             </button>
 
+            <!-- Dropdown Menu -->
             <div x-show="open" @click.away="open = false" x-transition:enter="transition ease-out duration-200"
                 x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
                 x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 scale-100"
                 x-transition:leave-end="opacity-0 scale-95"
                 class="absolute bottom-full left-0 mb-3 w-full bg-white rounded-lg shadow-lg overflow-hidden z-50"
                 style="display: none;">
+
+                <!-- Profile Header -->
                 <div class="p-3 bg-gradient-to-r from-[#3085FE] to-blue-600 text-white">
                     <div class="flex items-center">
                         <div
-                            class="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white mr-3 shadow-inner">
+                            class="w-10 h-10 flex-shrink-0 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white mr-3 shadow-inner">
                             {{ Auth::user()->name[0] ?? 'U' }}
                         </div>
-                        <div>
-                            <div class="font-bold text-white">{{ Auth::user()->name ?? 'User' }}</div>
-                            <div class="text-xs text-white/80">{{ Auth::user()->email ?? 'user@example.com' }}</div>
+                        <div class="min-w-0 flex-1">
+                            <div class="font-bold text-white truncate">{{ Auth::user()->name ?? 'User' }}</div>
+                            <div class="text-xs text-white/80 truncate">
+                                {{ Auth::user()->email ?? 'user@example.com' }}</div>
                         </div>
                     </div>
                 </div>
 
+                <!-- Menu Options -->
                 <div class="p-2">
                     <a href="{{ route('profile.index') }}"
                         class="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 rounded-md transition-colors">
@@ -209,7 +160,7 @@
                 </div>
             </div>
 
-            <!-- Custom Logout Confirmation Modal -->
+            <!-- Logout Modal -->
             <div x-show="showLogoutModal" x-transition:enter="transition ease-out duration-300"
                 x-transition:enter-start="opacity-0 transform scale-90"
                 x-transition:enter-end="opacity-100 transform scale-100"
@@ -217,6 +168,7 @@
                 x-transition:leave-start="opacity-100 transform scale-100"
                 x-transition:leave-end="opacity-0 transform scale-90"
                 class="fixed inset-0 z-10 flex items-center justify-center p-4" style="display: none;">
+
                 <!-- Backdrop -->
                 <div class="absolute inset-0 bg-black bg-opacity-50" @click="showLogoutModal = false"></div>
 
@@ -235,10 +187,7 @@
                             </div>
 
                             <div class="mt-3 text-center sm:mt-0 sm:ms-4 sm:text-start">
-                                <h3 class="text-lg font-medium text-gray-900">
-                                    Confirm Logout
-                                </h3>
-
+                                <h3 class="text-lg font-medium text-gray-900">Confirm Logout</h3>
                                 <div class="mt-4 text-sm text-gray-600">
                                     Are you sure you want to log out of your account?
                                 </div>

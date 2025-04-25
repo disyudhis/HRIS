@@ -86,7 +86,6 @@ class ProfileEdit extends Component
         'full_name' => 'nullable|string|max:255',
         'email' => 'required|email|max:255',
         'phone' => 'nullable|string|max:20',
-        'employee_id' => 'nullable|string|max:100',
         'photo' => 'nullable|image|max:2048',
 
         // Additional Information
@@ -227,7 +226,6 @@ class ProfileEdit extends Component
         $this->user->full_name = $this->full_name;
         $this->user->email = $this->email;
         $this->user->phone = $this->phone;
-        $this->user->employee_id = $this->employee_id;
 
         // Handle photo upload to Cloudinary
         if ($this->photo) {

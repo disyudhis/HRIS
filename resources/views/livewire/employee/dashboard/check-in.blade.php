@@ -130,7 +130,8 @@
             @endif
 
             <!-- Map Container -->
-            <div wire:ignore class="w-full h-64 z-0 rounded-xl overflow-hidden border border-[#DADADA] shadow-sm" id="map"></div>
+            <div wire:ignore class="w-full h-64 z-0 rounded-xl overflow-hidden border border-[#DADADA] shadow-sm"
+                id="map"></div>
 
             <!-- Location Status -->
             <div class="bg-gray-50 rounded-xl border border-[#DADADA] p-4">
@@ -201,25 +202,31 @@
             @endif
 
             <!-- Check-in/Check-out Buttons -->
-            @if (!$todayAttendance)
+            @if ($todayAttendance)
                 <button x-on:click="checkIn"
                     x-bind:disabled="!isInRange || {{ $todaySchedule && !$isWithinSchedule ? 'true' : 'false' }}"
-                    x-bind:class="{ 'bg-[#3085FE] hover:bg-[#2a75e6]': isInRange &&
-                            {{ $todaySchedule && $isWithinSchedule ? 'true' : 'false' }}, 'bg-[#ACAFB5] cursor-not-allowed':
-                            !isInRange || {{ $todaySchedule && !$isWithinSchedule ? 'true' : 'false' }} }"
-                    class="w-full h-[60px] text-white rounded-xl text-xl font-medium transition-colors">
-                    Check In Now
+                    class="w-full h-[60px] text-white rounded-xl text-xl font-medium transition-colors"
+                    :class="{
+                        'bg-[#3085FE] hover:bg-[#2a75e6]': isInRange &&
+                            {{ $todaySchedule && $isWithinSchedule ? 'true' : 'false' }},
+                        'bg-[#ACAFB5] cursor-not-allowed': !isInRange ||
+                            {{ $todaySchedule && !$isWithinSchedule ? 'true' : 'false' }}
+                    }">
+                    <span>Check In Now</span>
                 </button>
-            @elseif(!$todayAttendance->check_out_time)
+            {{-- @elseif($todayAttendance->check_out_time != null)
                 <button x-on:click="checkOut" x-bind:disabled="!isInRange"
-                    x-bind:class="{ 'bg-[#3085FE] hover:bg-[#2a75e6]': isInRange, 'bg-[#ACAFB5] cursor-not-allowed': !isInRange }"
-                    class="w-full h-[60px] text-white rounded-xl text-xl font-medium transition-colors">
-                    Check Out Now
-                </button>
+                    class="w-full h-[60px] text-white rounded-xl text-xl font-medium transition-colors"
+                    :class="{
+                        'bg-[#3085FE] hover:bg-[#2a75e6]': isInRange,
+                        'bg-[#ACAFB5] cursor-not-allowed': !isInRange
+                    }">
+                    <span>Check Out Now</span>
+                </button> --}}
             @else
-                <button disabled
-                    class="w-full h-[60px] bg-green-500 text-white rounded-xl text-xl font-medium cursor-not-allowed">
-                    Attendance Completed
+                <button
+                    class="w-full disabled h-[60px] bg-green-500 text-white rounded-xl text-xl font-medium cursor-not-allowed">
+                    <span>Attendance Completed</span>
                 </button>
             @endif
 

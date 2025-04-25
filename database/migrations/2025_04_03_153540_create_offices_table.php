@@ -28,7 +28,7 @@ return new class extends Migration
         });
 
         Schema::table('users', function (Blueprint $table) {
-            $table->foreignId('office_id')->nullable()->after('department')->constrained()->nullOnDelete();
+            $table->foreignId('office_id')->nullable()->constrained()->nullOnDelete();
         });
     }
 

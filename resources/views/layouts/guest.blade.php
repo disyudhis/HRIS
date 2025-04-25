@@ -23,11 +23,22 @@
 
 <body class="font-sans antialiased bg-white">
 
-    <div class="min-h-screen flex flex-col px-6 py-12">
+    <div class="min-h-screen flex flex-col">
         {{ $slot }}
     </div>
 
+    <x-toast />
+
     @livewireScripts
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            @if (session()->has('toast'))
+                window.dispatchEvent(new CustomEvent('toast', {
+                    detail: {!! json_encode(session('toast')) !!}
+                }));
+            @endif
+        });
+    </script>
 </body>
 
 </html>
