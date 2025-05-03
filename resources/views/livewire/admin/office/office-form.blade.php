@@ -73,15 +73,6 @@
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
-
-                <div class="flex items-center mt-4">
-                    <input type="checkbox" wire:model="is_active" id="is_active" value="1"
-                        class="rounded border-gray-300 text-[#3085FE] shadow-sm focus:border-[#3085FE] focus:ring-[#3085FE]">
-                    <label for="is_active" class="ml-2 block text-sm text-gray-700">Active</label>
-                    @error('is_active')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
             </div>
 
             <div>
@@ -98,7 +89,7 @@
                 <div
                     x-data="officeMap()"
                     x-init="initMap({{ $latitude ?? 'null' }}, {{ $longitude ?? 'null' }}, {{ $check_in_radius }})"
-                    class="w-full h-96 rounded-lg border border-gray-300 overflow-hidden relative"
+                    class="w-full h-96 rounded-lg border z-10 border-gray-300 overflow-hidden relative"
                     id="office-map" wire:ignore>
                     <div x-show="isLocating" class="absolute inset-0 bg-white bg-opacity-70 flex items-center justify-center z-10">
                         <div class="flex flex-col items-center">
