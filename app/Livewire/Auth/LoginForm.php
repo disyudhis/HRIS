@@ -28,7 +28,7 @@ class LoginForm extends Component
 
         if (Auth::attempt(['email' => $this->email, 'password' => $this->password])) {
             session()->regenerate();
-            return $this->redirect(route(Auth::user()->isAdmin() ? 'admin.offices.index' : 'dashboard.check-in'), navigate: true);
+            return redirect()->route(Auth::user()->isAdmin() ? 'admin.offices.index' : 'dashboard.check-in');
         } else {
             $this->dispatch('toast', [
                 'message' => 'Email atau password salah',
@@ -59,7 +59,6 @@ class LoginForm extends Component
                 'type' => 'error',
                 'duration' => 5000,
             ]);
-
         }
 
         return $errorBag;

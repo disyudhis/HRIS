@@ -9,6 +9,11 @@ class BusinessTrips extends Model
 {
     use HasFactory;
 
+    const STATUS_PENDING = 'pending';
+    const STATUS_APPROVED = 'approved';
+    const STATUS_REJECTED = 'rejected';
+    const STATUS_CANCELLED = 'cancelled';
+
     protected $fillable = [
         'user_id',
         'destination',
@@ -44,6 +49,21 @@ class BusinessTrips extends Model
     public function approver()
     {
         return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    public function getStatusColorAttribute(){
+        switch ($this->status) {
+            case self::STATUS_PENDING:
+                return 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200';
+            case self::STATUS_APPROVED:
+                return 'bg-green-100 text-green-800 hover:bg-green-200';
+            case self::STATUS_REJECTED:
+                return 'bg-red-100 text-red-800 hover:bg-red-200';
+            case self::STATUS_CANCELLED:
+                return 'bg-gray-100 text-gray-800';
+            default:
+                return '';
+        }
     }
 
     /**

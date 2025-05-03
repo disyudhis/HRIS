@@ -18,7 +18,7 @@ return new class extends Migration {
             $table->time('end_time');
             $table->text('reason');
             $table->text('tasks');
-            $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
+            $table->enum('status', ['pending', 'approved', 'rejected', 'cancelled'])->default('pending');
             $table->foreignId('approved_by')->nullable()->constrained('users')->onDelete('set null');
             $table->timestamp('approved_at')->nullable();
             $table->text('rejection_reason')->nullable();

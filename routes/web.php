@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\employee\OvertimeController;
+use App\Http\Controllers\Employee\SppdController;
 use App\Http\Controllers\Manager\Schedule\ScheduleController;
 use App\Http\Controllers\ProfileController;
 use App\Models\User;
@@ -23,6 +25,27 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     Route::get('/schedules', function () {
         return view('employee.schedules.index');
     })->name('employee.schedules.index');
+
+    Route::prefix('/approvals')
+        ->name('employee.approvals.')
+        ->group(function () {
+            Route::prefix('/overtimes')
+                ->name('overtime.')
+                ->group(function () {
+                    Route::get('/', [OvertimeController::class, 'index'])->name('index');
+                    Route::get('/create', [OvertimeController::class, 'create'])->name('create');
+                    Route::get('/edit/{overtime}', [OvertimeController::class, 'edit'])->name('edit');
+                    Route::get('/show/{overtime}', [OvertimeController::class, 'show'])->name('show');
+                });
+            Route::prefix('/business-trips')
+                ->name('business-trips.')
+                ->group(function () {
+                    Route::get('/', [SppdController::class, 'index'])->name('index');
+                    Route::get('/create', [SppdController::class, 'create'])->name('create');
+                    Route::get('/edit/{sppd}', [SppdController::class, 'edit'])->name('edit');
+                    Route::get('/show/{sppd}', [SppdController::class, 'show'])->name('show');
+                });
+        });
 
     Route::prefix('profile')
         ->name('profile.')
