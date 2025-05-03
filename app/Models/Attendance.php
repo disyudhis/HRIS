@@ -14,30 +14,27 @@ class Attendance extends Model
     const STATUS_LATE = "LATE";
     const STATUS_ABSENT = "ABSENT";
 
+    const TYPE_CHECK_IN = "CHECK_IN";
+    const TYPE_CHECK_OUT = "CHECK_OUT";
+
     protected $fillable = [
-        'user_id',
-        'check_in_time',
-        'check_out_time',
+        'type',
+        'time',
         'latitude',
         'longitude',
         'distance',
         'status',
         'notes',
-        'schedule_id'
+        'schedule_id',
+        'is_checked',
     ];
 
     protected $casts = [
-        'check_in_time' => 'datetime',
-        'check_out_time' => 'datetime',
+        'time' => 'datetime',
         'latitude' => 'float',
         'longitude' => 'float',
         'distance' => 'float',
     ];
-
-    public function user()
-    {
-        return $this->belongsTo(User::class);
-    }
 
     public function schedule(){
         return $this->belongsTo(Schedule::class);

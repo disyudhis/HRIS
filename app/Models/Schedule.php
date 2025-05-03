@@ -42,6 +42,21 @@ class Schedule extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    public function attendances()
+    {
+        return $this->hasMany(Attendance::class);
+    }
+
+    public function checkIn()
+    {
+        return $this->hasOne(Attendance::class)->where('type', Attendance::TYPE_CHECK_IN);
+    }
+    
+    public function checkOut()
+    {
+        return $this->hasOne(Attendance::class)->where('type', Attendance::TYPE_CHECK_OUT);
+    }
+
     /**
      * Calculate the duration of the schedule in hours.
      */

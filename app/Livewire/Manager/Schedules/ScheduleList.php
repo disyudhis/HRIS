@@ -150,7 +150,7 @@ class ScheduleList extends Component
         $schedule = Schedule::findOrFail($scheduleId);
         $schedule->delete();
 
-        $this->dispatchBrowserEvent('notify', [
+        $this->dispatch('notify', [
             'message' => 'Schedule deleted successfully!',
             'type' => 'success',
         ]);

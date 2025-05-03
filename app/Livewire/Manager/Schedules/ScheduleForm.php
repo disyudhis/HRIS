@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use App\Models\User;
 use Livewire\Component;
 use App\Models\Schedule;
+use App\Models\Attendance;
 use Illuminate\Support\Facades\Auth;
 
 class ScheduleForm extends Component
@@ -72,7 +73,8 @@ class ScheduleForm extends Component
         }
     }
 
-    public function loadDepartments(){
+    public function loadDepartments()
+    {
         $this->departments = User::where('manager_id', Auth::id())
             ->with('user_details')
             ->whereHas('user_details', function ($query) {
@@ -179,7 +181,6 @@ class ScheduleForm extends Component
         $this->validate();
 
         if ($this->editMode) {
-            // Update existing schedule
             $schedule = Schedule::findOrFail($this->scheduleId);
             $schedule->update([
                 'date' => $this->date,
@@ -189,6 +190,9 @@ class ScheduleForm extends Component
                 'notes' => $this->notes,
                 'created_by' => Auth::id(),
             ]);
+
+            // Update attendance records jika perlu
+            $this->updateAttendanceRecords($schedule);
 
             session()->flash('message', 'Schedule updated successfully!');
         } else {
@@ -214,7 +218,7 @@ class ScheduleForm extends Component
                 continue; // Skip this employee
             }
 
-            Schedule::create([
+            $schedule = Schedule::create([
                 'user_id' => $employeeId,
                 'date' => $this->date,
                 'start_time' => $this->startTime,
@@ -223,6 +227,9 @@ class ScheduleForm extends Component
                 'notes' => $this->notes,
                 'created_by' => Auth::id(),
             ]);
+
+            // Create attendance records for this schedule
+            $this->createAttendanceRecords($schedule);
 
             $count++;
         }
@@ -257,7 +264,7 @@ class ScheduleForm extends Component
                     continue; // Skip this date/employee combination
                 }
 
-                Schedule::create([
+                $schedule = Schedule::create([
                     'user_id' => $employeeId,
                     'date' => $currentDate->format('Y-m-d'),
                     'start_time' => $this->startTime,
@@ -267,6 +274,9 @@ class ScheduleForm extends Component
                     'created_by' => Auth::id(),
                 ]);
 
+                // Create attendance records for this schedule
+                $this->createAttendanceRecords($schedule);
+
                 $count++;
             }
 
@@ -275,6 +285,68 @@ class ScheduleForm extends Component
         }
 
         session()->flash('message', "{$count} recurring schedule(s) created successfully!");
+    }
+
+    /**
+     * Create check-in and check-out attendance records for a schedule
+     *
+     * @param Schedule $schedule
+     * @return void
+     */
+    protected function createAttendanceRecords(Schedule $schedule)
+    {
+        // Create check-in record
+        Attendance::create([
+            'schedule_id' => $schedule->id,
+            'time' => null, // Will be filled when employee checks in
+            'status' => Attendance::STATUS_ABSENT, // Default status
+            'is_checked' => false,
+            'type' => 'CHECK_IN', // Tambahkan kolom type di model Attendance
+            'notes' => 'Auto-generated check-in record',
+        ]);
+
+        // Create check-out record
+        Attendance::create([
+            'schedule_id' => $schedule->id,
+            'time' => null, // Will be filled when employee checks out
+            'status' => Attendance::STATUS_ABSENT, // Default status
+            'is_checked' => false,
+            'type' => 'CHECK_OUT', // Tambahkan kolom type di model Attendance
+            'notes' => 'Auto-generated check-out record',
+        ]);
+    }
+
+    /**
+     * Update attendance records when schedule is updated
+     *
+     * @param Schedule $schedule
+     * @return void
+     */
+    protected function updateAttendanceRecords(Schedule $schedule)
+    {
+        // Check if attendance records exist
+        $checkInRecord = Attendance::where('schedule_id', $schedule->id)->where('type', 'CHECK_IN')->first();
+
+        $checkOutRecord = Attendance::where('schedule_id', $schedule->id)->where('type', 'CHECK_OUT')->first();
+
+        // If records don't exist, create them
+        if (!$checkInRecord || !$checkOutRecord) {
+            $this->createAttendanceRecords($schedule);
+            return;
+        }
+
+        // Update existing records if they haven't been checked yet
+        if (!$checkInRecord->is_checked) {
+            $checkInRecord->update([
+                'notes' => 'Updated check-in record - Schedule changed',
+            ]);
+        }
+
+        if (!$checkOutRecord->is_checked) {
+            $checkOutRecord->update([
+                'notes' => 'Updated check-out record - Schedule changed',
+            ]);
+        }
     }
 
     public function render()

@@ -201,8 +201,10 @@
                 </div>
             @endif
 
+
             <!-- Check-in/Check-out Buttons -->
-            @if ($todayAttendance)
+            @if (!$todayAttendance)
+                <!-- Belum check-in sama sekali -->
                 <button x-on:click="checkIn"
                     x-bind:disabled="!isInRange || {{ $todaySchedule && !$isWithinSchedule ? 'true' : 'false' }}"
                     class="w-full h-[60px] text-white rounded-xl text-xl font-medium transition-colors"
@@ -214,16 +216,18 @@
                     }">
                     <span>Check In Now</span>
                 </button>
-            {{-- @elseif($todayAttendance->check_out_time != null)
+            @elseif($todayAttendance && $todayAttendance->check_out_time == null)
+                <!-- Sudah check-in tapi belum check-out -->
                 <button x-on:click="checkOut" x-bind:disabled="!isInRange"
                     class="w-full h-[60px] text-white rounded-xl text-xl font-medium transition-colors"
                     :class="{
-                        'bg-[#3085FE] hover:bg-[#2a75e6]': isInRange,
+                        'bg-[#F97316] hover:bg-[#ea6c10]': isInRange,
                         'bg-[#ACAFB5] cursor-not-allowed': !isInRange
                     }">
                     <span>Check Out Now</span>
-                </button> --}}
+                </button>
             @else
+                <!-- Sudah check-in dan check-out (completed) -->
                 <button
                     class="w-full disabled h-[60px] bg-green-500 text-white rounded-xl text-xl font-medium cursor-not-allowed">
                     <span>Attendance Completed</span>
