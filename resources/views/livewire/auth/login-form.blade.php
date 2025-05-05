@@ -4,7 +4,7 @@
             <div class="relative mb-6 group">
                 <label
                     class="absolute left-4 top-2 text-blue-600 text-sm font-medium transition-all duration-200 group-focus-within:text-[#3085FE]">
-                    Email Address
+                    Username
                 </label>
                 <div class="flex items-center">
                     <div class="absolute left-4 bottom-4 text-gray-400 group-focus-within:text-[#3085FE]">
@@ -15,7 +15,7 @@
                             <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
                         </svg>
                     </div>
-                    <input type="email" wire:model.defer="email"
+                    <input type="text" wire:model.live="username"
                         class="w-full h-[65px] pl-12 pr-4 pt-7 pb-2 border border-gray-200 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#3085FE] focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-white">
                 </div>
             </div>
@@ -34,7 +34,7 @@
                             <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                         </svg>
                     </div>
-                    <input x-bind:type="showPassword ? 'text' : 'password'" wire:model.defer="password"
+                    <input x-bind:type="showPassword ? 'text' : 'password'" wire:model.live="password"
                         class="w-full h-[65px] pl-12 pr-12 pt-7 pb-2 border border-gray-200 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#3085FE] focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-white">
                     <button type="button" x-on:click="showPassword = !showPassword"
                         class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-[#3085FE] transition-colors duration-200">

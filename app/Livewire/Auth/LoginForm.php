@@ -8,16 +8,17 @@ use Livewire\Component;
 
 class LoginForm extends Component
 {
-    public $email;
+    public $username;
     public $password;
+    public $remember = true;
     protected $rules = [
-        'email' => 'required|email',
+        'username' => 'required|string',
         'password' => 'required',
     ];
 
     protected $messages = [
-        'email.required' => 'Email harus diisi',
-        'email.email' => 'Format email tidak valid',
+        'username.required' => 'Username harus diisi',
+        'username.string' => 'Format username tidak valid',
         'password.required' => 'Password harus diisi',
         'password.min' => 'Password minimal 8 karakter',
     ];
@@ -26,12 +27,13 @@ class LoginForm extends Component
     {
         $this->validate();
 
-        if (Auth::attempt(['email' => $this->email, 'password' => $this->password])) {
+        if (Auth::attempt(['name' => $this->username, 'password' => $this->password], $this->remember)) {
             session()->regenerate();
+
             return redirect()->route(Auth::user()->isAdmin() ? 'admin.offices.index' : 'dashboard.check-in');
         } else {
             $this->dispatch('toast', [
-                'message' => 'Email atau password salah',
+                'message' => 'Username atau password salah',
                 'type' => 'error',
                 'duration' => 5000,
             ]);
