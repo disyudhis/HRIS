@@ -46,7 +46,7 @@
         <!-- Manager Navigation Links -->
         @if (Auth::user()->isManager())
             <a href="{{ route('manager.approvals.business-trips.index') }}"
-                class="flex items-center px-4 py-3 rounded-lg {{ request()->routeIs('manager.approvals.business-trips.index') ? 'bg-[#3085FE] text-white' : 'text-gray-700 hover:bg-gray-100' }}">
+                class="flex items-center px-4 py-3 rounded-lg {{ request()->routeIs('manager.approvals.business-trips.*') ? 'bg-[#3085FE] text-white' : 'text-gray-700 hover:bg-gray-100' }}">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24"
                     stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -56,7 +56,7 @@
             </a>
 
             <a href="{{ route('manager.approvals.overtime.index') }}"
-                class="flex items-center px-4 py-3 rounded-lg {{ request()->routeIs('manager.approvals.overtime.index') ? 'bg-[#3085FE] text-white' : 'text-gray-700 hover:bg-gray-100' }}">
+                class="flex items-center px-4 py-3 rounded-lg {{ request()->routeIs('manager.approvals.overtime.*') ? 'bg-[#3085FE] text-white' : 'text-gray-700 hover:bg-gray-100' }}">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24"
                     stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -79,7 +79,7 @@
         <!-- Employee Schedule Link -->
         @if (Auth::user()->isEmployee())
         <a href="{{ route('employee.approvals.business-trips.index') }}"
-                class="flex items-center px-4 py-3 rounded-lg {{ request()->routeIs('employee.approvals.business-trips.index') ? 'bg-[#3085FE] text-white' : 'text-gray-700 hover:bg-gray-100' }}">
+                class="flex items-center px-4 py-3 rounded-lg {{ request()->routeIs('employee.approvals.business-trips.*') ? 'bg-[#3085FE] text-white' : 'text-gray-700 hover:bg-gray-100' }}">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24"
                     stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
