@@ -1,5 +1,32 @@
 <form wire:submit.prevent="save" class="space-y-6">
     <div x-data="{ loading: false }" @submit="loading = true">
+         <!-- Kuota Lembur Bulanan -->
+         <div class="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <h4 class="font-medium text-gray-800 mb-2">Informasi Kuota Lembur</h4>
+            <div class="flex items-center justify-between mb-1">
+                <span class="text-sm text-gray-600">Kuota maksimal per bulan:</span>
+                <span class="font-medium">{{ self::MAX_MONTHLY_OVERTIME_HOURS }} jam</span>
+            </div>
+            <div class="flex items-center justify-between mb-1">
+                <span class="text-sm text-gray-600">Terpakai bulan ini:</span>
+                <span class="font-medium">{{ $usedOvertimeHours }} jam</span>
+            </div>
+            <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-600">Sisa kuota:</span>
+                <span class="font-medium {{ $remainingOvertimeHours < 5 ? 'text-red-600' : 'text-green-600' }}">
+                    {{ $remainingOvertimeHours }} jam
+                </span>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="w-full bg-gray-200 rounded-full h-2.5 mt-2">
+                @php
+                    $percentageUsed = min(100, ($usedOvertimeHours / self::MAX_MONTHLY_OVERTIME_HOURS) * 100);
+                    $progressColorClass = $percentageUsed > 90 ? 'bg-red-600' : ($percentageUsed > 70 ? 'bg-yellow-500' : 'bg-green-600');
+                @endphp
+                <div class="{{ $progressColorClass }} h-2.5 rounded-full" style="width: {{ $percentageUsed }}%"></div>
+            </div>
+        </div>
         <!-- User Name (Readonly) -->
         <div class="mb-6">
             <label for="user_name" class="block text-sm font-medium text-gray-700 mb-1">Nama Pegawai</label>
@@ -61,17 +88,6 @@
                       class="w-full rounded-lg border-gray-300 focus:border-[#3085FE] focus:ring-[#3085FE]"
                       placeholder="Jelaskan uraian pekerjaan yang akan dilakukan..."></textarea>
             @error('reason')
-                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-            @enderror
-        </div>
-
-        <!-- Tasks -->
-        <div class="mb-6">
-            <label for="tasks" class="block text-sm font-medium text-gray-700 mb-1">Detail Tugas</label>
-            <textarea id="tasks" wire:model="tasks" rows="3"
-                      class="w-full rounded-lg border-gray-300 focus:border-[#3085FE] focus:ring-[#3085FE]"
-                      placeholder="Rincian tugas yang akan dikerjakan..."></textarea>
-            @error('tasks')
                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
             @enderror
         </div>

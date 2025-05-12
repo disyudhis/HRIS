@@ -18,7 +18,9 @@ return new class extends Migration
             $table->text('purpose');
             $table->date('start_date');
             $table->date('end_date');
-            $table->decimal('estimated_cost', 10, 2)->nullable();
+            $table->decimal('estimated_cost_per_day', 10, 2)->default(300000)->nullable();
+            $table->decimal('total_estimated_cost', 12, 2)->default(0)->nullable();
+            $table->integer('total_days')->default(1)->nullable();
             $table->text('notes')->nullable();
             $table->enum('status', ['pending', 'approved', 'rejected', 'completed'])->default('pending');
             $table->foreignId('approved_by')->nullable()->constrained('users')->onDelete('set null');

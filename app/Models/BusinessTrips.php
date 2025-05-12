@@ -20,7 +20,9 @@ class BusinessTrips extends Model
         'purpose',
         'start_date',
         'end_date',
-        'estimated_cost',
+        'estimated_cost_per_day',
+        'total_estimated_cost',
+        'total_days',
         'notes',
         'status',
         'approved_by',
@@ -31,8 +33,10 @@ class BusinessTrips extends Model
     protected $casts = [
         'start_date' => 'date',
         'end_date' => 'date',
-        'estimated_cost' => 'decimal:2',
+        'additional_travelers' => 'array',
+        'estimated_cost_per_day' => 'decimal:2',
         'approved_at' => 'datetime',
+        'total_estimated_cost' => 'decimal:2',
     ];
 
     /**
@@ -72,5 +76,42 @@ class BusinessTrips extends Model
     public function getDurationAttribute()
     {
         return $this->start_date->diffInDays($this->end_date) + 1;
+    }
+
+    public function calculateTotalDays(): int
+    {
+        return $this->start_date->diffInDays($this->end_date) + 1;
+    }
+
+    /**
+     * Calculate the total estimated cost of the trip.
+     */
+    public function calculateTotalCost(): float
+    {
+        return $this->estimated_cost_per_day * $this->calculateTotalDays();
+    }
+
+    /**
+     * Scope a query to only include pending trips.
+     */
+    public function scopePending($query)
+    {
+        return $query->where('status', 'pending');
+    }
+
+    /**
+     * Scope a query to only include approved trips.
+     */
+    public function scopeApproved($query)
+    {
+        return $query->where('status', 'approved');
+    }
+
+    /**
+     * Scope a query to only include rejected trips.
+     */
+    public function scopeRejected($query)
+    {
+        return $query->where('status', 'rejected');
     }
 }

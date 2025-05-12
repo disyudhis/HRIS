@@ -15,27 +15,87 @@ class OvertimeApprovals extends Component
     public $search = '';
     public $filter = 'pending';
     public $selectedOvertime = null;
-    public $showDetailsModal = false;
+    public $showRejectionModal = false;
+    public $showApprovalModal = false;
     public $rejectionReason = '';
+    public $counts = [];
 
-    protected $listeners = ['refreshOvertimeApprovals' => '$refresh'];
+    // protected $listeners = ['refreshOvertimeApprovals' => '$refresh'];
 
-    public function approve($overtimeId)
+    public function mount()
     {
-        $overtime = Overtime::findOrFail($overtimeId);
-        $overtime->status = 'approved';
-        $overtime->approved_by = Auth::id();
-        $overtime->approved_at = now();
-        $overtime->save();
+        // Initialize counts when component is mounted
+        $this->updateCounts();
+    }
 
+    public function updatedSearch()
+    {
+        // Reset pagination when search is updated
+        $this->resetPage();
+        $this->updateCounts();
+    }
+    public function updatedFilter()
+    {
+        // Reset pagination when filter is changed
+        $this->resetPage();
+    }
+
+    private function updateCounts()
+    {
+        // Get all employees managed by the current manager
+        $employeeIds = User::where('manager_id', Auth::id())->pluck('id');
+
+        // Get counts for each status
+        $this->counts = [
+            'pending' => Overtime::whereIn('user_id', $employeeIds)
+                ->where('status', 'pending')
+                ->when($this->search, function ($query) {
+                    return $query->whereHas('user', function ($q) {
+                        $q->where('name', 'like', '%' . $this->search . '%');
+                    })->orWhere('reason', 'like', '%' . $this->search . '%');
+                })
+                ->count(),
+            'approved' => Overtime::whereIn('user_id', $employeeIds)
+                ->where('status', 'approved')
+                ->when($this->search, function ($query) {
+                    return $query->whereHas('user', function ($q) {
+                        $q->where('name', 'like', '%' . $this->search . '%');
+                    })->orWhere('reason', 'like', '%' . $this->search . '%');
+                })
+                ->count(),
+            'rejected' => Overtime::whereIn('user_id', $employeeIds)
+                ->where('status', 'rejected')
+                ->when($this->search, function ($query) {
+                    return $query->whereHas('user', function ($q) {
+                        $q->where('name', 'like', '%' . $this->search . '%');
+                    })->orWhere('reason', 'like', '%' . $this->search . '%');
+                })
+                ->count(),
+        ];
+    }
+    public function approve()
+    {
+        $this->selectedOvertime->status = 'approved';
+        $this->selectedOvertime->approved_by = Auth::id();
+        $this->selectedOvertime->approved_at = now();
+        $this->selectedOvertime->save();
+
+        $this->closeModal();
         session()->flash('message', 'Overtime request approved successfully.');
     }
 
     public function showRejectModal($overtimeId)
     {
+        // dd('tes');
         $this->selectedOvertime = Overtime::findOrFail($overtimeId);
         $this->rejectionReason = '';
-        $this->showDetailsModal = true;
+        $this->showRejectionModal = true;
+    }
+
+    public function showApproveModal($overtimeId)
+    {
+        $this->selectedOvertime = Overtime::findOrFail($overtimeId);
+        $this->showApprovalModal = true;
     }
 
     public function reject()
@@ -50,18 +110,17 @@ class OvertimeApprovals extends Component
         $this->selectedOvertime->rejection_reason = $this->rejectionReason;
         $this->selectedOvertime->save();
 
-        $this->showDetailsModal = false;
         $this->selectedOvertime = null;
         $this->rejectionReason = '';
+        $this->closeModal();
 
         session()->flash('message', 'Overtime request rejected.');
     }
 
     public function closeModal()
     {
-        $this->showDetailsModal = false;
-        $this->selectedOvertime = null;
-        $this->rejectionReason = '';
+        $this->showRejectionModal = false;
+        $this->showApprovalModal = false;
     }
 
     public function render()

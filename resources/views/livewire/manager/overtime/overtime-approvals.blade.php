@@ -33,4 +33,5 @@
 
     <!-- Modals -->
     @include('livewire.manager.overtime.partials.rejection-modal')
+    @include('livewire.manager.overtime.partials.approval-modal')
 </div>

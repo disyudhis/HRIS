@@ -33,4 +33,5 @@
 
     <!-- Modals -->
     @include('livewire.manager.business-trips.partials.rejection-modal')
+    @include('livewire.manager.business-trips.partials.confirmation-modal')
 </div>

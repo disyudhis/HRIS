@@ -51,7 +51,7 @@ class Schedule extends Model
     {
         return $this->hasOne(Attendance::class)->where('type', Attendance::TYPE_CHECK_IN);
     }
-    
+
     public function checkOut()
     {
         return $this->hasOne(Attendance::class)->where('type', Attendance::TYPE_CHECK_OUT);

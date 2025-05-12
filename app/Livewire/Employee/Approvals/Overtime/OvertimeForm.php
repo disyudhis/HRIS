@@ -5,6 +5,7 @@ namespace App\Livewire\Employee\Approvals\Overtime;
 use Carbon\Carbon;
 use Livewire\Component;
 use App\Models\Overtime;
+use Illuminate\Validation\ValidationException;
 
 class OvertimeForm extends Component
 {
@@ -13,7 +14,13 @@ class OvertimeForm extends Component
     public $start_time;
     public $end_time;
     public $reason;
-    public $tasks;
+    public $usedOvertimeHours;
+    public $remainingOvertimeHours;
+    public $estimatedDuration;
+    public $estimatedCost;
+
+    // Batas maksimal jam lembur per bulan
+    public const MAX_MONTHLY_OVERTIME_HOURS = 30;
 
     // Validation rules
     protected $rules = [
@@ -22,7 +29,6 @@ class OvertimeForm extends Component
         'start_time' => 'required|date_format:H:i',
         'end_time' => 'required|date_format:H:i|after:start_time',
         'reason' => 'required|string|min:10|max:500',
-        'tasks' => 'required|string|min:10|max:500',
     ];
 
     // Custom validation messages
@@ -39,15 +45,124 @@ class OvertimeForm extends Component
         'reason.required' => 'Uraian pekerjaan harus diisi',
         'reason.min' => 'Uraian pekerjaan minimal 10 karakter',
         'reason.max' => 'Uraian pekerjaan maksimal 500 karakter',
-        'tasks.required' => 'Detail tugas harus diisi',
-        'tasks.min' => 'Detail tugas minimal 10 karakter',
-        'tasks.max' => 'Detail tugas maksimal 500 karakter',
     ];
 
     public function mount()
     {
         // Set tanggal default ke hari ini
         $this->date = Carbon::today()->format('Y-m-d');
+
+        // Inisialisasi informasi kuota lembur
+        $this->updateOvertimeQuotaInfo();
+        $this->estimatedCost = 0;
+    }
+
+    /**
+     * Update informasi kuota lembur saat ini
+     */
+    public function updateOvertimeQuotaInfo()
+    {
+        $this->usedOvertimeHours = $this->getTotalMonthlyOvertimeHours();
+        $this->remainingOvertimeHours = max(0, self::MAX_MONTHLY_OVERTIME_HOURS - $this->usedOvertimeHours);
+        $this->calculateEstimatedDuration();
+    }
+
+    /**
+     * Menghitung durasi lembur dalam jam
+     *
+     * @return float
+     */
+    private function calculateOvertimeDuration(): float
+    {
+        $startDateTime = Carbon::parse($this->date . ' ' . $this->start_time);
+        $endDateTime = Carbon::parse($this->date . ' ' . $this->end_time);
+
+        // Jika waktu selesai adalah hari berikutnya
+        if ($endDateTime->lt($startDateTime)) {
+            $endDateTime->addDay();
+        }
+
+        // Hitung durasi dalam jam (dengan 2 angka desimal)
+        return round($endDateTime->diffInMinutes($startDateTime) / 60, 2);
+    }
+
+    /**
+     * Menghitung estimasi durasi lembur untuk ditampilkan di form
+     *
+     * @return void
+     */
+    public function calculateEstimatedDuration(): void
+    {
+        if (!$this->start_time || !$this->end_time) {
+            $this->estimatedDuration = 0;
+            return;
+        }
+
+        try {
+            $this->estimatedDuration = $this->calculateOvertimeDuration();
+        } catch (\Exception $e) {
+            $this->estimatedDuration = 0;
+        }
+    }
+
+    /**
+     * Menghitung total jam lembur dalam bulan yang sama dengan tanggal yang dipilih
+     *
+     * @return float
+     */
+    private function getTotalMonthlyOvertimeHours(): float
+    {
+        $selectedDate = Carbon::parse($this->date);
+        $startOfMonth = $selectedDate->copy()->startOfMonth()->format('Y-m-d');
+        $endOfMonth = $selectedDate->copy()->endOfMonth()->format('Y-m-d');
+
+        // Ambil semua overtime yang sudah disetujui dan yang masih pending pada bulan yang sama
+        $overtimes = Overtime::where('user_id', auth()->id())
+            ->whereIn('status', ['approved', 'pending'])
+            ->whereDate('date', '>=', $startOfMonth)
+            ->whereDate('date', '<=', $endOfMonth)
+            ->get();
+
+        $totalHours = 0;
+
+        foreach ($overtimes as $overtime) {
+            $date = Carbon::parse($overtime->date)->format('Y-m-d');
+            $startTime = Carbon::parse($overtime->start_time)->format('H:i:s');
+            $endTime = Carbon::parse($overtime->end_time)->format('H:i:s');
+
+            $startDateTime = Carbon::parse("$date $startTime");
+            $endDateTime = Carbon::parse("$date $endTime");
+
+            // Jika waktu selesai adalah hari berikutnya
+            if ($endDateTime->lt($startDateTime)) {
+                $endDateTime->addDay();
+            }
+
+            $durationInHours = $endDateTime->diffInMinutes($startDateTime) / 60;
+            $totalHours += $durationInHours;
+        }
+
+        return round($totalHours, 2);
+    }
+
+    /**
+     * Validasi apakah penambahan jam lembur melebihi batas maksimal
+     *
+     * @param float $currentDuration
+     * @throws ValidationException
+     */
+    private function validateMonthlyOvertimeLimit(float $currentDuration): void
+    {
+        $totalMonthlyHours = $this->getTotalMonthlyOvertimeHours();
+        $newTotalHours = $totalMonthlyHours + $currentDuration;
+
+        if ($newTotalHours > self::MAX_MONTHLY_OVERTIME_HOURS) {
+            $remainingHours = self::MAX_MONTHLY_OVERTIME_HOURS - $totalMonthlyHours;
+
+            throw ValidationException::withMessages([
+                'end_time' => "Total jam lembur melebihi batas maksimal 40 jam per bulan. Sisa kuota lembur: {$remainingHours} jam."
+            ]);
+        }
     }
 
     public function save()
@@ -56,6 +171,12 @@ class OvertimeForm extends Component
         $this->validate();
 
         try {
+            // Hitung durasi lembur yang diajukan
+            $overtimeDuration = $this->calculateOvertimeDuration();
+
+            // Validasi batas maksimal lembur per bulan
+            $this->validateMonthlyOvertimeLimit($overtimeDuration);
+
             // Simpan data overtime
             Overtime::create([
                 'user_id' => auth()->id(),
@@ -64,23 +185,44 @@ class OvertimeForm extends Component
                 'start_time' => $this->start_time,
                 'end_time' => $this->end_time,
                 'reason' => $this->reason,
-                'tasks' => $this->tasks,
                 'status' => 'pending', // Status default: pending
             ]);
 
             // Reset form setelah berhasil disimpan
-            $this->reset(['type', 'start_time', 'end_time', 'reason', 'tasks']);
+            $this->reset(['type', 'start_time', 'end_time', 'reason']);
             $this->date = Carbon::today()->format('Y-m-d');
 
+            // Update informasi kuota lembur
+            $this->updateOvertimeQuotaInfo();
+
             // Tampilkan notifikasi sukses
-            $this->dispatch('notify', 'Pengajuan lembur berhasil disimpan');
+            session()->flash('message', 'Pengajuan lembur berhasil disimpan');
 
             // Redirect ke halaman index
             return redirect()->route('employee.approvals.overtime.index');
 
+        } catch (ValidationException $e) {
+            // Tangani validasi error khusus
+            $this->setErrorBag($e->validator->getMessageBag());
         } catch (\Exception $e) {
-            // Tangani error
+            // Tangani error umum
             session()->flash('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Update properti waktu lembur ketika berubah
+     */
+    public function updated($propertyName)
+    {
+        // Jika properti yang berubah adalah waktu mulai atau selesai, update estimasi durasi
+        if (in_array($propertyName, ['start_time', 'end_time', 'date'])) {
+            $this->calculateEstimatedDuration();
+        }
+
+        // Jika tanggal berubah, perbarui informasi kuota lembur
+        if ($propertyName === 'date') {
+            $this->updateOvertimeQuotaInfo();
         }
     }
 

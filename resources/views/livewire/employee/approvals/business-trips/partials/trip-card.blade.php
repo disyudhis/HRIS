@@ -38,7 +38,7 @@
 
                 <div>
                     <h4 class="text-sm font-medium text-gray-700">Estimasi Biaya</h4>
-                    <p class="mt-1 text-sm text-gray-600">Rp {{ number_format($trip->estimated_cost, 0, ',', '.') }}</p>
+                    <p class="mt-1 text-sm text-gray-600">Rp {{ number_format($trip->total_estimated_cost, 0, ',', '.') }}</p>
                 </div>
             </div>
 

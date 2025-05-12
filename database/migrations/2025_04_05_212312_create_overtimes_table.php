@@ -13,21 +13,21 @@ return new class extends Migration {
         Schema::create('overtimes', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->date('date');
-            $table->time('start_time');
-            $table->time('end_time');
-            $table->text('reason');
-            $table->text('tasks');
+            $table->date('date')->nullable();
+            $table->time('start_time')->nullable();
+            $table->time('end_time')->nullable();
+            $table->text('reason')->nullable();
             $table->enum('status', ['pending', 'approved', 'rejected', 'cancelled'])->default('pending');
             $table->foreignId('approved_by')->nullable()->constrained('users')->onDelete('set null');
             $table->timestamp('approved_at')->nullable();
             $table->text('rejection_reason')->nullable();
+            $table->decimal('estimated_cost', 12, 2)->default(0)->nullable();
             $table->timestamps();
         });
     }
 
     /**
-     * Reverse the migrations.
+ * Reverse the migrations
      */
     public function down(): void
     {
