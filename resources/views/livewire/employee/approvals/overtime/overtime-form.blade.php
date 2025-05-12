@@ -65,7 +65,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <div>
                 <label for="start_time" class="block text-sm font-medium text-gray-700 mb-1">Waktu Mulai</label>
-                <input type="time" id="start_time" wire:model="start_time"
+                <input type="time" id="start_time" wire:model.live="start_time"
                        class="w-full rounded-lg border-gray-300 focus:border-[#3085FE] focus:ring-[#3085FE]">
                 @error('start_time')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -73,11 +73,28 @@
             </div>
             <div>
                 <label for="end_time" class="block text-sm font-medium text-gray-700 mb-1">Waktu Selesai</label>
-                <input type="time" id="end_time" wire:model="end_time"
+                <input type="time" id="end_time" wire:model.live="end_time"
                        class="w-full rounded-lg border-gray-300 focus:border-[#3085FE] focus:ring-[#3085FE]">
                 @error('end_time')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                 @enderror
+            </div>
+        </div>
+
+        <!-- Estimated Duration & Cost -->
+        <div class="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <h4 class="font-medium text-gray-800 mb-2">Estimasi Lembur</h4>
+            <div class="flex items-center justify-between mb-1">
+                <span class="text-sm text-gray-600">Durasi:</span>
+                <span class="font-medium">{{ $estimatedDuration }} jam</span>
+            </div>
+            <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-600">Estimasi Biaya:</span>
+                <span class="font-medium text-blue-700">{{ $this->getFormattedEstimatedCost() }}</span>
+            </div>
+            <div class="mt-2 text-xs text-gray-500">
+                <p>*Biaya lembur: Rp {{ number_format(App\Models\Overtime::HOURLY_RATE, 0, ',', '.') }}/jam</p>
+                <p>*Maksimal biaya: Rp {{ number_format(App\Models\Overtime::MAX_OVERTIME_COST, 0, ',', '.') }}</p>
             </div>
         </div>
 

@@ -19,9 +19,8 @@ class OvertimeForm extends Component
     public $estimatedDuration;
     public $estimatedCost;
 
-    // Batas maksimal jam lembur per bulan
-    public const MAX_MONTHLY_OVERTIME_HOURS = 30;
-
+    public const MAX_MONTHLY_OVERTIME_HOURS = 30; // Batas maksimal lembur per bulan
+    public const HOURLY_RATE = 25000;
     // Validation rules
     protected $rules = [
         'date' => 'required|date|date_format:Y-m-d',
@@ -65,6 +64,7 @@ class OvertimeForm extends Component
         $this->usedOvertimeHours = $this->getTotalMonthlyOvertimeHours();
         $this->remainingOvertimeHours = max(0, self::MAX_MONTHLY_OVERTIME_HOURS - $this->usedOvertimeHours);
         $this->calculateEstimatedDuration();
+        $this->calculateEstimatedCost();
     }
 
     /**
@@ -82,9 +82,13 @@ class OvertimeForm extends Component
             $endDateTime->addDay();
         }
 
-        // Hitung durasi dalam jam (dengan 2 angka desimal)
-        return round($endDateTime->diffInMinutes($startDateTime) / 60, 2);
+        // Hitung durasi dalam menit, lalu dibulatkan ke atas ke jam penuh
+        $durationInMinutes = $startDateTime->diffInMinutes($endDateTime);
+        $durationInHours = ceil($durationInMinutes / 60); // dibulatkan ke atas
+
+        return $durationInHours;
     }
+
 
     /**
      * Menghitung estimasi durasi lembur untuk ditampilkan di form
@@ -100,9 +104,40 @@ class OvertimeForm extends Component
 
         try {
             $this->estimatedDuration = $this->calculateOvertimeDuration();
+            $this->calculateEstimatedCost();
         } catch (\Exception $e) {
             $this->estimatedDuration = 0;
+            $this->estimatedCost = 0;
         }
+    }
+
+    /**
+     * Menghitung estimasi biaya lembur berdasarkan durasi
+     *
+     * @return void
+     */
+    public function calculateEstimatedCost(): void
+    {
+        if (!$this->estimatedDuration) {
+            $this->estimatedCost = 0;
+            return;
+        }
+
+        try {
+            $this->estimatedCost = Overtime::calculateCost($this->estimatedDuration);
+        } catch (\Exception $e) {
+            $this->estimatedCost = 0;
+        }
+    }
+
+    /**
+     * Format biaya untuk tampilan
+     *
+     * @return string
+     */
+    public function getFormattedEstimatedCost(): string
+    {
+        return 'Rp ' . number_format($this->estimatedCost, 0, ',', '.');
     }
 
     /**
@@ -138,7 +173,7 @@ class OvertimeForm extends Component
                 $endDateTime->addDay();
             }
 
-            $durationInHours = $endDateTime->diffInMinutes($startDateTime) / 60;
+            $durationInHours = $startDateTime->diffInMinutes($endDateTime) / 60;
             $totalHours += $durationInHours;
         }
 
@@ -160,7 +195,7 @@ class OvertimeForm extends Component
             $remainingHours = self::MAX_MONTHLY_OVERTIME_HOURS - $totalMonthlyHours;
 
             throw ValidationException::withMessages([
-                'end_time' => "Total jam lembur melebihi batas maksimal 40 jam per bulan. Sisa kuota lembur: {$remainingHours} jam."
+                'end_time' => "Total jam lembur melebihi batas maksimal " . self::MAX_MONTHLY_OVERTIME_HOURS . " jam per bulan. Sisa kuota lembur: {$remainingHours} jam."
             ]);
         }
     }
@@ -177,6 +212,9 @@ class OvertimeForm extends Component
             // Validasi batas maksimal lembur per bulan
             $this->validateMonthlyOvertimeLimit($overtimeDuration);
 
+            // Hitung estimasi biaya lembur
+            $estimatedCost = Overtime::calculateCost($overtimeDuration);
+
             // Simpan data overtime
             Overtime::create([
                 'user_id' => auth()->id(),
@@ -186,6 +224,7 @@ class OvertimeForm extends Component
                 'end_time' => $this->end_time,
                 'reason' => $this->reason,
                 'status' => 'pending', // Status default: pending
+                'estimated_cost' => $estimatedCost,
             ]);
 
             // Reset form setelah berhasil disimpan
@@ -215,9 +254,10 @@ class OvertimeForm extends Component
      */
     public function updated($propertyName)
     {
-        // Jika properti yang berubah adalah waktu mulai atau selesai, update estimasi durasi
+        // Jika properti yang berubah adalah waktu mulai atau selesai, update estimasi durasi dan biaya
         if (in_array($propertyName, ['start_time', 'end_time', 'date'])) {
             $this->calculateEstimatedDuration();
+            $this->calculateEstimatedCost();
         }
 
         // Jika tanggal berubah, perbarui informasi kuota lembur

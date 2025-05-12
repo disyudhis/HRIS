@@ -21,7 +21,7 @@
                         <span>{{ $overtime->start_time->format('H:m') }} -
                             {{ $overtime->end_time->format('H:m') }}</span>
                         <span class="px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 text-xs">
-                            {{ floor($overtime->start_time->diffInMinutes($overtime->end_time)) / 60 }} jam
+                            {{ ceil($overtime->start_time->diffInMinutes($overtime->end_time) / 60) }} jam
                         </span>
                     </div>
                 </div>
@@ -52,8 +52,19 @@
                 <p class="mt-1 text-sm text-gray-600">{{ $overtime->reason }}</p>
             </div>
 
+            <div>
+                <h4 class="text-sm font-medium text-gray-700">Estimasi Biaya Lembur</h4>
+                <p class="mt-1 text-sm font-medium text-blue-600">
+                    {{ $overtime->formatted_cost }}
+                </p>
+                <p class="text-xs text-gray-500">
+                    ({{ ceil($overtime->start_time->diffInMinutes($overtime->end_time) / 60) }} jam
+                    @ Rp {{ number_format(App\Models\Overtime::HOURLY_RATE, 0, ',', '.') }}/jam)
+                </p>
+            </div>
+
             @if ($overtime->tasks)
-                <div>
+                <div class="md:col-span-2">
                     <h4 class="text-sm font-medium text-gray-700">Detail Tugas</h4>
                     <p class="mt-1 text-sm text-gray-600">{{ $overtime->tasks }}</p>
                 </div>

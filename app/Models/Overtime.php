@@ -90,9 +90,4 @@ class Overtime extends Model
         return min($cost, self::MAX_OVERTIME_COST);
     }
 
-    public function getFormattedCostAttribute()
-    {
-        return 'Rp ' . number_format($this->estimated_cost, 0, ',', '.');
-    }
-
 }
