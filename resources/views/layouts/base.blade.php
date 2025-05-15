@@ -14,15 +14,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-    <link href="{{ asset('build/assets/app-BdceUX3I.js') }}" rel="stylesheet">
-    <script src="{{ asset('build/assets/app-KOhq0z4A.css') }}"></script>
 
     <!-- Styles -->
     @stack('styles')
-    @if (config('app.env') === 'local')
-        @vite(['resources/css/app.css'])
-        @vite(['resources/js/app.js'])
-    @endif
+    {{-- @if (config('app.env') === 'local')
+    @endif --}}
+    @vite(['resources/css/app.css'])
+    @vite(['resources/js/app.js'])
     @livewireStyles
 </head>
 
