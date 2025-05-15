@@ -12,8 +12,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link href="{{ asset('css/app.css') }}" rel="stylesheet">
-    <script src="{{ asset('js/app.js') }}"></script>
+    <link href="{{ asset('build/assets/app-BdceUX3I.js') }}" rel="stylesheet">
+    <script src="{{ asset('build/assets/app-KOhq0z4A.css') }}"></script>
 
     <!-- Styles -->
     @if (config('app.env') === 'local')
