@@ -1,110 +1,111 @@
 <?php
 
-use App\Http\Controllers\employee\OvertimeController;
-use App\Http\Controllers\employee\SppdController;
-use App\Http\Controllers\Manager\Schedule\ScheduleController;
-use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ApprovalController;
+use App\Http\Controllers\OfficeController;
+use App\Http\Controllers\UserController;
 use App\Models\User;
 use App\Models\Offices;
 use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\ManagerMiddleware;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\employee\SppdController;
+use App\Http\Controllers\employee\OvertimeController;
+use App\Http\Controllers\Manager\Schedule\ScheduleController;
 
-Route::get('/', function () {
-    return view('auth.login');
-});
+// Redirect to login page
+Route::redirect('/', '/login');
 
+// Authenticated routes
 Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified'])->group(function () {
-    Route::get('/', function () {
-        return redirect()->route('dashboard.check-in');
-    })->name('dashboard');
-    Route::get('/check-in', function () {
-        return view('dashboard.check-in');
-    })->name('dashboard.check-in');
-    Route::get('/schedules', function () {
-        return view('employee.schedules.index');
-    })->name('employee.schedules.index');
+    // Dashboard
+    Route::redirect('/', '/check-in')->name('dashboard');
+    Route::get('/check-in', [DashboardController::class, 'checkIn'])->name('dashboard.check-in');
+    Route::get('/schedules', [DashboardController::class, 'schedules'])->name('employee.schedules.index');
 
-    Route::prefix('/approvals')
-        ->name('employee.approvals.')
-        ->group(function () {
-            Route::prefix('/overtimes')
-                ->name('overtime.')
-                ->group(function () {
-                    Route::get('/', [OvertimeController::class, 'index'])->name('index');
-                    Route::get('/create', [OvertimeController::class, 'create'])->name('create');
-                    Route::get('/edit/{overtime}', [OvertimeController::class, 'edit'])->name('edit');
-                    Route::get('/show/{overtime}', [OvertimeController::class, 'show'])->name('show');
-                });
-            Route::prefix('/business-trips')
-                ->name('business-trips.')
-                ->group(function () {
-                    Route::get('/', [SppdController::class, 'index'])->name('index');
-                    Route::get('/create', [SppdController::class, 'create'])->name('create');
-                    Route::get('/edit/{sppd}', [SppdController::class, 'edit'])->name('edit');
-                    Route::get('/show/{sppd}', [SppdController::class, 'show'])->name('show');
-                });
-        });
-
-    Route::prefix('profile')
+    // Profile routes
+    Route::controller(ProfileController::class)
+        ->prefix('profile')
         ->name('profile.')
         ->group(function () {
-            Route::get('/', [ProfileController::class, 'index'])->name('index');
-            Route::get('/edit', [ProfileController::class, 'edit'])->name('edit');
-            Route::get('/change-password', [ProfileController::class, 'changePassword'])->name('change-password');
+            Route::get('/', 'index')->name('index');
+            Route::get('/edit', 'edit')->name('edit');
+            Route::get('/change-password', 'changePassword')->name('change-password');
         });
 
-    Route::middleware([AdminMiddleware::class])
+    // Employee approval routes
+    Route::prefix('approvals')
+        ->name('employee.approvals.')
+        ->group(function () {
+            // Overtime routes
+            Route::controller(OvertimeController::class)
+                ->prefix('overtimes')
+                ->name('overtime.')
+                ->group(function () {
+                    Route::get('/', 'index')->name('index');
+                    Route::get('/create', 'create')->name('create');
+                    Route::get('/edit/{overtime}', 'edit')->name('edit');
+                    Route::get('/show/{overtime}', 'show')->name('show');
+                });
+
+            // Business trips routes
+            Route::controller(SppdController::class)
+                ->prefix('business-trips')
+                ->name('business-trips.')
+                ->group(function () {
+                    Route::get('/', 'index')->name('index');
+                    Route::get('/create', 'create')->name('create');
+                    Route::get('/edit/{sppd}', 'edit')->name('edit');
+                    Route::get('/show/{sppd}', 'show')->name('show');
+                });
+        });
+
+    // Admin routes
+    Route::middleware(AdminMiddleware::class)
         ->prefix('admin')
         ->name('admin.')
         ->group(function () {
+            // Office management
             Route::prefix('offices')
                 ->name('offices.')
                 ->group(function () {
-                    Route::get('/', function () {
-                        return view('admin.office.index');
-                    })->name('index');
-                    Route::get('/create', function () {
-                        return view('admin.office.create');
-                    })->name('create');
-                    Route::get('/edit/{office}', function (Offices $office) {
-                        return view('admin.office.edit', compact('office'));
-                    })->name('edit');
+                    Route::get('/', [OfficeController::class, 'index'])->name('index');
+                    Route::get('/create', [OfficeController::class, 'create'])->name('create');
+                    Route::get('/edit/{office}', [OfficeController::class, 'edit'])->name('edit');
                 });
+
+            // User management
             Route::prefix('users')
                 ->name('users.')
                 ->group(function () {
-                    Route::get('/', function () {
-                        return view('admin.user.index');
-                    })->name('index');
-                    Route::get('/create', function () {
-                        return view('admin.user.create');
-                    })->name('create');
-                    Route::get('/edit/{user}', function (User $user) {
-                        return view('admin.user.edit', compact('user'));
-                    })->name('edit');
+                    Route::get('/', [UserController::class, 'index'])->name('index');
+                    Route::get('/create', [UserController::class, 'create'])->name('create');
+                    Route::get('/edit/{user}', [UserController::class, 'edit'])->name('edit');
                 });
         });
-    Route::middleware([ManagerMiddleware::class])
+
+    // Manager routes
+    Route::middleware(ManagerMiddleware::class)
         ->prefix('manager')
         ->name('manager.')
         ->group(function () {
+            // Manager approval routes
             Route::prefix('approvals')
                 ->name('approvals.')
                 ->group(function () {
-                    Route::get('/overtime', function () {
-                        return view('manager.overtime.index');
-                    })->name('overtime.index');
-                    Route::get('/business-trips', function () {
-                        return view('manager.business-trips.index');
-                    })->name('business-trips.index');
+                    Route::get('/overtime', [ApprovalController::class, 'overtime'])->name('overtime.index');
+                    Route::get('/business-trips', [ApprovalController::class, 'businessTrips'])->name('business-trips.index');
                 });
-            Route::prefix('schedules')
+
+            // Schedule management
+            Route::controller(ScheduleController::class)
+                ->prefix('schedules')
                 ->name('schedules.')
                 ->group(function () {
-                    Route::get('/', [ScheduleController::class, 'index'])->name('index');
-                    Route::get('/create', [ScheduleController::class, 'create'])->name('create');
-                    Route::get('/{schedule}/edit', [ScheduleController::class, 'edit'])->name('edit');
+                    Route::get('/', 'index')->name('index');
+                    Route::get('/create', 'create')->name('create');
+                    Route::get('/{schedule}/edit', 'edit')->name('edit');
                 });
         });
 });

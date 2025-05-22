@@ -1,14 +1,9 @@
 <?php
 
-use App\Console\Commands\AutoCheckOut;
-use Illuminate\Foundation\Console\ClosureCommand;
-use Illuminate\Foundation\Inspiring;
-use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schedule;
 
 // Artisan::command('inspire', function () {
 //     /** @var ClosureCommand $this */
 //     $this->comment(Inspiring::quote());
 // })->purpose('Display an inspiring quote');
-
-Schedule::command('app:auto-check-out')->everyFourHours()->evenInMaintenanceMode();
-Schedule::command('app:auto-absent')->everyFourHours()->evenInMaintenanceMode();
+Schedule::command('app:process-attendance')->everyMinute()->evenInMaintenanceMode()->appendOutputTo(storage_path('logs/attendance-scheduler.log'));

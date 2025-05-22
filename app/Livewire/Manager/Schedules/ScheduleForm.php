@@ -304,16 +304,6 @@ class ScheduleForm extends Component
             'type' => 'CHECK_IN', // Tambahkan kolom type di model Attendance
             'notes' => 'Auto-generated check-in record',
         ]);
-
-        // Create check-out record
-        Attendance::create([
-            'schedule_id' => $schedule->id,
-            'time' => null, // Will be filled when employee checks out
-            'status' => Attendance::STATUS_ABSENT, // Default status
-            'is_checked' => false,
-            'type' => 'CHECK_OUT', // Tambahkan kolom type di model Attendance
-            'notes' => 'Auto-generated check-out record',
-        ]);
     }
 
     /**
@@ -327,10 +317,8 @@ class ScheduleForm extends Component
         // Check if attendance records exist
         $checkInRecord = Attendance::where('schedule_id', $schedule->id)->where('type', 'CHECK_IN')->first();
 
-        $checkOutRecord = Attendance::where('schedule_id', $schedule->id)->where('type', 'CHECK_OUT')->first();
-
         // If records don't exist, create them
-        if (!$checkInRecord || !$checkOutRecord) {
+        if (!$checkInRecord) {
             $this->createAttendanceRecords($schedule);
             return;
         }
@@ -339,12 +327,6 @@ class ScheduleForm extends Component
         if (!$checkInRecord->is_checked) {
             $checkInRecord->update([
                 'notes' => 'Updated check-in record - Schedule changed',
-            ]);
-        }
-
-        if (!$checkOutRecord->is_checked) {
-            $checkOutRecord->update([
-                'notes' => 'Updated check-out record - Schedule changed',
             ]);
         }
     }

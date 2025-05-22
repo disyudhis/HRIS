@@ -13,44 +13,73 @@ use Illuminate\Support\Facades\Auth;
 
 class CheckIn extends Component
 {
+    // User location properties
     public $userLatitude = null;
     public $userLongitude = null;
     public $distance = null;
     public $isInRange = false;
-    public $checkInStatus = null;
-    public $errorMessage = null;
-    public $todayAttendance = null;
-    public $todaySchedule = null;
-    public $isWithinSchedule = false;
-    public $scheduleStatus = null;
 
-    // Office location coordinates
+    // Office location properties
     public $officeLatitude = null;
     public $officeLongitude = null;
     public $allowedRadius = null;
     public $officeName = null;
 
+    // Attendance properties
+    public $todayAttendance = null;
+    public $checkOutRecord = null;
+    public $todaySchedule = null;
+
+    // Status properties
+    public $checkInStatus = null;
+    public $errorMessage = null;
+    public $scheduleStatus = null;
+    public $isWithinCheckInTime = false;
+    public $isWithinCheckOutTime = false;
+
     protected $listeners = ['locationUpdated', 'performCheckIn', 'performCheckOut'];
 
     public function mount()
+    {
+        if (!$this->validateUserOffice()) {
+            return;
+        }
+
+        $this->loadTodaySchedule();
+        $this->loadTodayAttendance();
+        $this->checkScheduleTime();
+        // dd($this->isWithinCheckOutTime);
+    }
+
+    public function render()
+    {
+        return view('livewire.employee.dashboard.check-in');
+    }
+
+    /**
+     * Validate user's office assignment
+     *
+     * @return bool
+     */
+    private function validateUserOffice(): bool
     {
         $user = Auth::user();
 
         if (!$user->office_id) {
             $this->errorMessage = 'You are not assigned to any office. Please contact your administrator.';
-            return;
+            return false;
         }
 
         $office = Offices::find($user->office_id);
 
         if (!$office) {
             $this->errorMessage = 'Office not found. Please contact your administrator.';
-            return;
+            return false;
         }
 
         if (!$office->is_active) {
             $this->errorMessage = 'Your office is currently inactive. Please contact your administrator.';
-            return;
+            return false;
         }
 
         $this->officeLatitude = $office->latitude;
@@ -58,46 +87,66 @@ class CheckIn extends Component
         $this->allowedRadius = $office->check_in_radius;
         $this->officeName = $office->name;
 
-        // Check if user already has attendance for today
-        $this->loadTodayAttendance();
-
-        // Load today's schedule
-        $this->loadTodaySchedule();
-
-        // Check if current time is within schedule
-        $this->checkScheduleTime();
+        return true;
     }
 
+    /**
+     * Load today's attendance records
+     */
     public function loadTodayAttendance()
     {
         $this->todayAttendance = Attendance::with('schedule')
             ->whereHas('schedule', function ($query) {
                 $query->where('user_id', Auth::id())->whereDate('date', Carbon::today());
             })
-            ->where('type', 'CHECK_IN') // Ambil hanya record check-in
+            ->where('type', 'CHECK_IN')
+            ->first();
+
+        if ($this->todayAttendance && $this->todayAttendance->is_checked) {
+            $this->loadCheckOutRecord();
+        }
+    }
+
+    /**
+     * Load check-out record for today
+     */
+    public function loadCheckOutRecord()
+    {
+        $this->checkOutRecord = Attendance::with('schedule')
+            ->whereHas('schedule', function ($query) {
+                $query->where('user_id', Auth::id())->whereDate('date', Carbon::today());
+            })
+            ->where('type', 'CHECK_OUT')
             ->first();
     }
 
+    /**
+     * Load today's schedule
+     */
     public function loadTodaySchedule()
     {
         $this->todaySchedule = Schedule::where('user_id', Auth::id())->whereDate('date', Carbon::today())->first();
 
-        // dd($this->todaySchedule);
         if (!$this->todaySchedule) {
             $this->scheduleStatus = "You don't have a schedule for today.";
         }
     }
 
+    /**
+     * Check if current time is within schedule window
+     */
     public function checkScheduleTime()
     {
         if (!$this->todaySchedule) {
-            $this->isWithinSchedule = false;
+            $this->isWithinCheckInTime = false;
+            $this->isWithinCheckOutTime = false;
             return;
         }
 
         $now = Carbon::now();
         $scheduleStart = Carbon::parse($this->todaySchedule->start_time);
         $scheduleEnd = Carbon::parse($this->todaySchedule->end_time);
+        $alreadyCheckedIn = $this->todayAttendance && $this->todayAttendance->is_checked;
 
         // Check if schedule crosses midnight
         $crossesMidnight = $scheduleEnd->lt($scheduleStart);
@@ -108,40 +157,71 @@ class CheckIn extends Component
         // Allow check-out until 2 hours after schedule ends
         $checkOutWindow = $scheduleEnd->copy()->addHours(2);
 
-        // Adjust end time if schedule crosses midnight
         if ($crossesMidnight) {
-            // If current time is before midnight and after start time
-            if ($now->gte($checkInWindow)) {
-                $this->isWithinSchedule = true;
-            }
-            // If current time is after midnight but before end time
-            elseif ($now->lte($checkOutWindow)) {
-                $this->isWithinSchedule = true;
-            } else {
-                $this->isWithinSchedule = false;
-
-                if ($now->lt($checkInWindow)) {
-                    $this->scheduleStatus = 'Your schedule starts at ' . $scheduleStart->format('h:i A') . '. You can check in 30 minutes before.';
-                } else {
-                    $this->scheduleStatus = 'Your schedule ended at ' . $scheduleEnd->format('h:i A') . '. You can no longer check in/out for today.';
-                }
-            }
+            $this->handleCrossMidnightSchedule($now, $checkInWindow, $checkOutWindow, $scheduleStart, $scheduleEnd, $alreadyCheckedIn);
         } else {
-            // Normal case (not crossing midnight)
-            if ($now->between($checkInWindow, $checkOutWindow)) {
-                $this->isWithinSchedule = true;
-            } else {
-                $this->isWithinSchedule = false;
-
-                if ($now->lt($checkInWindow)) {
-                    $this->scheduleStatus = 'Your schedule starts at ' . $scheduleStart->format('h:i A') . '. You can check in 30 minutes before.';
-                } else {
-                    $this->scheduleStatus = 'Your schedule ended at ' . $scheduleEnd->format('h:i A') . '. You can no longer check in/out for today.';
-                }
-            }
+            $this->handleNormalSchedule($now, $checkInWindow, $checkOutWindow, $scheduleStart, $scheduleEnd, $alreadyCheckedIn);
         }
     }
 
+    /**
+     * Handle schedule that crosses midnight
+     */
+    private function handleCrossMidnightSchedule($now, $checkInWindow, $checkOutWindow, $scheduleStart, $scheduleEnd, $alreadyCheckedIn)
+    {
+        // If current time is before midnight and after start time
+        if ($now->gte($checkInWindow) && $now->lt($scheduleStart)) {
+            $this->isWithinCheckInTime = true;
+            dd('cross');
+        }
+        // If current time is after midnight but before end time
+        elseif ($now->lte($checkOutWindow)) {
+            $this->isWithinCheckInTime = true;
+            dd('criss');
+            $this->isWithinCheckOutTime = true;
+        } else {
+            $this->isWithinCheckInTime = false;
+            $this->isWithinCheckOutTime = true;
+            $this->setScheduleStatusMessage($now, $checkInWindow, $scheduleStart, $scheduleEnd, $checkOutWindow, $alreadyCheckedIn);
+        }
+    }
+
+    /**
+     * Handle normal schedule (not crossing midnight)
+     */
+    private function handleNormalSchedule($now, $checkInWindow, $checkOutWindow, $scheduleStart, $scheduleEnd, $alreadyCheckedIn)
+    {
+        if ($now->between($checkInWindow, $scheduleEnd)) {
+            $this->isWithinCheckInTime = true;
+        }elseif($now->gte($scheduleEnd) && $now->lte($checkOutWindow)) {
+            $this->isWithinCheckInTime = false;
+            $this->isWithinCheckOutTime = true;
+            $this->setScheduleStatusMessage($now, $checkInWindow, $scheduleStart, $scheduleEnd, $checkOutWindow, $alreadyCheckedIn);
+        }  else {
+            $this->isWithinCheckInTime = false;
+            $this->isWithinCheckOutTime = false;
+        }
+    }
+
+    /**
+     * Set schedule status message based on current time
+     */
+    private function setScheduleStatusMessage($now, $checkInWindow, $scheduleStart, $scheduleEnd, $checkOutWindow, $alreadyCheckedIn)
+    {
+        if (!$alreadyCheckedIn) {
+            if ($now->lt($checkInWindow)) {
+                $this->scheduleStatus = 'Your schedule starts at ' . $scheduleStart->format('h:i A') . '. You can check in 30 minutes before.';
+            } else {
+                $this->scheduleStatus = 'Your schedule ended at ' . $scheduleEnd->format('h:i A') . '. You can no longer check in/out for today.';
+            }
+        } else {
+            $this->scheduleStatus = 'You can check out until ' . $checkOutWindow->format('h:i A') . '.';
+        }
+    }
+
+    /**
+     * Update user location and reset status messages
+     */
     public function locationUpdated($latitude, $longitude, $distance, $isInRange)
     {
         $this->userLatitude = $latitude;
@@ -154,39 +234,28 @@ class CheckIn extends Component
         $this->errorMessage = null;
     }
 
+    /**
+     * Perform check-in
+     */
     public function performCheckIn()
     {
-        if (!$this->isInRange) {
-            $this->errorMessage = "You must be within {$this->allowedRadius} meters of the office to check in.";
-            return;
-        }
-
-        if (!$this->isWithinSchedule && $this->todaySchedule) {
-            $this->errorMessage = $this->scheduleStatus;
-            return;
-        }
-
-        if (!$this->todaySchedule) {
-            $this->errorMessage = "You don't have a schedule for today. Please contact your manager.";
+        if (!$this->validateCheckInConditions()) {
             return;
         }
 
         try {
-            // Create attendance record
-            Attendance::create([
-                'user_id' => Auth::id(),
-                'schedule_id' => $this->todaySchedule->id,
-                'check_in_time' => Carbon::now(),
-                'latitude' => $this->userLatitude,
-                'longitude' => $this->userLongitude,
-                'distance' => $this->distance,
-                'status' => $this->determineAttendanceStatus(),
-            ]);
+            $this->todayAttendance->checked_time = Carbon::now();
+            $this->todayAttendance->latitude = $this->userLatitude;
+            $this->todayAttendance->longitude = $this->userLongitude;
+            $this->todayAttendance->distance = $this->distance;
+            $this->todayAttendance->status = $this->determineAttendanceStatus();
+            $this->todayAttendance->is_checked = true;
+            $this->todayAttendance->save();
 
             $this->checkInStatus = 'Success! You have checked in at ' . Carbon::now()->format('h:i A');
             $this->errorMessage = null;
 
-            // Reload attendance data
+            $this->createCheckOutRecord();
             $this->loadTodayAttendance();
 
             $this->dispatch('checkInSuccess');
@@ -196,33 +265,58 @@ class CheckIn extends Component
         }
     }
 
-    public function performCheckOut()
+    /**
+     * Validate check-in conditions
+     *
+     * @return bool
+     */
+    private function validateCheckInConditions(): bool
     {
         if (!$this->isInRange) {
-            $this->errorMessage = "You must be within {$this->allowedRadius} meters of the office to check out.";
-            return;
+            $this->errorMessage = "You must be within {$this->allowedRadius} meters of the office to check in.";
+            return false;
         }
 
-        if (!$this->todayAttendance) {
-            $this->errorMessage = "You haven't checked in today.";
-            return;
+        if (!$this->isWithinCheckInTime && $this->todaySchedule) {
+            $this->errorMessage = $this->scheduleStatus;
+            return false;
         }
 
-        if ($this->todayAttendance->check_out_time) {
-            $this->errorMessage = 'You have already checked out today.';
+        if (!$this->todaySchedule) {
+            $this->errorMessage = "You don't have a schedule for today. Please contact your manager.";
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Perform check-out
+     */
+    public function performCheckOut()
+    {
+        if (!$this->validateCheckOutConditions()) {
             return;
         }
 
         try {
             // Update attendance record with check out time
-            $this->todayAttendance->check_out_time = Carbon::now();
-            $this->todayAttendance->save();
+            $this->checkOutRecord->checked_time = Carbon::now();
+            $this->checkOutRecord->latitude = $this->userLatitude;
+            $this->checkOutRecord->longitude = $this->userLongitude;
+            $this->checkOutRecord->distance = $this->distance;
+            $this->checkOutRecord->is_checked = true;
+            $this->checkOutRecord->save();
+
+            $this->todaySchedule->is_checked = true;
+            $this->todaySchedule->notes = 'PRESENT';
+            $this->todaySchedule->save();
 
             $this->checkInStatus = 'Success! You have checked out at ' . Carbon::now()->format('h:i A');
             $this->errorMessage = null;
 
-            // Reload attendance data
             $this->loadTodayAttendance();
+            $this->loadCheckOutRecord();
 
             $this->dispatch('checkOutSuccess');
         } catch (\Exception $e) {
@@ -231,7 +325,37 @@ class CheckIn extends Component
         }
     }
 
-    private function determineAttendanceStatus()
+    /**
+     * Validate check-out conditions
+     *
+     * @return bool
+     */
+    private function validateCheckOutConditions(): bool
+    {
+        if (!$this->isInRange) {
+            $this->errorMessage = "You must be within {$this->allowedRadius} meters of the office to check out.";
+            return false;
+        }
+
+        if (!$this->todayAttendance || !$this->todayAttendance->is_checked) {
+            $this->errorMessage = "You haven't checked in today.";
+            return false;
+        }
+
+        if ($this->checkOutRecord && $this->checkOutRecord->is_checked) {
+            $this->errorMessage = 'You have already checked out today.';
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Determine attendance status based on check-in time
+     *
+     * @return string
+     */
+    private function determineAttendanceStatus(): string
     {
         if (!$this->todaySchedule) {
             return 'PRESENT';
@@ -248,8 +372,17 @@ class CheckIn extends Component
         return 'PRESENT';
     }
 
-    public function render()
+    /**
+     * Create check-out record
+     */
+    public function createCheckOutRecord()
     {
-        return view('livewire.employee.dashboard.check-in');
+        Attendance::create([
+            'type' => 'CHECK_OUT',
+            'schedule_id' => $this->todaySchedule->id,
+            'is_checked' => false,
+            'status' => 'ABSENT',
+            'notes' => 'Auto-generated check-out record',
+        ]);
     }
 }

@@ -44,7 +44,7 @@
                             {{ ucfirst($todaySchedule->shift_type) }} Shift
                         </div>
                     </div>
-                    @if (!$isWithinSchedule)
+                    @if ($isWithinCheckInTime == false && $isWithinCheckOutTime == true)
                         <div class="mt-3 text-sm text-yellow-600">
                             {{ $scheduleStatus }}
                         </div>
@@ -88,22 +88,18 @@
                                 <div>
                                     <p class="text-[#101317] font-medium">Check In</p>
                                     <p class="text-[#ACAFB5] text-sm">
-                                        {{ Carbon\Carbon::parse($todayAttendance->check_in_time)->format('h:i A') }}
+                                        {{ $todayAttendance->checked_time ? Carbon\Carbon::parse($todayAttendance->checked_time)->format('H:i') : '-' }}
                                     </p>
                                 </div>
                             </div>
                             <div
                                 class="px-3 py-1 rounded-lg text-xs font-medium
-              {{ $todayAttendance->status === 'present'
-                  ? 'bg-green-100 text-green-800'
-                  : ($todayAttendance->status === 'late'
-                      ? 'bg-yellow-100 text-yellow-800'
-                      : 'bg-red-100 text-red-800') }}">
+              {{ $todayAttendance->status_color }}">
                                 {{ ucfirst($todayAttendance->status) }}
                             </div>
                         </div>
 
-                        @if ($todayAttendance->check_out_time)
+                        @if ($checkOutRecord)
                             <div class="flex justify-between items-center">
                                 <div class="flex items-center">
                                     <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center mr-3">
@@ -116,12 +112,13 @@
                                     <div>
                                         <p class="text-[#101317] font-medium">Check Out</p>
                                         <p class="text-[#ACAFB5] text-sm">
-                                            {{ Carbon\Carbon::parse($todayAttendance->check_out_time)->format('h:i A') }}
+                                            {{ $checkOutRecord->checked_time ? Carbon\Carbon::parse($checkOutRecord->checked_time)->format('h:i A') : '-' }}
                                         </p>
                                     </div>
                                 </div>
-                                <div class="px-3 py-1 rounded-lg text-xs font-medium bg-blue-100 text-blue-800">
-                                    Completed
+                                <div class="px-3 py-1 rounded-lg text-xs font-medium {{ $checkOutRecord->status_color }}">
+                                    {{-- {{ dd($checkOutRecord) }} --}}
+                                    {{ ucfirst($checkOutRecord->status) }}
                                 </div>
                             </div>
                         @endif
@@ -202,37 +199,42 @@
             @endif
 
 
-            <!-- Check-in/Check-out Buttons -->
-            @if (!$todayAttendance)
-                <!-- Belum check-in sama sekali -->
-                <button x-on:click="checkIn"
-                    x-bind:disabled="!isInRange || {{ $todaySchedule && !$isWithinSchedule ? 'true' : 'false' }}"
-                    class="w-full h-[60px] text-white rounded-xl text-xl font-medium transition-colors"
-                    :class="{
-                        'bg-[#3085FE] hover:bg-[#2a75e6]': isInRange &&
-                            {{ $todaySchedule && $isWithinSchedule ? 'true' : 'false' }},
-                        'bg-[#ACAFB5] cursor-not-allowed': !isInRange ||
-                            {{ $todaySchedule && !$isWithinSchedule ? 'true' : 'false' }}
-                    }">
-                    <span>Check In Now</span>
-                </button>
-            @elseif($todayAttendance && $todayAttendance->check_out_time == null)
-                <!-- Sudah check-in tapi belum check-out -->
-                <button x-on:click="checkOut" x-bind:disabled="!isInRange"
-                    class="w-full h-[60px] text-white rounded-xl text-xl font-medium transition-colors"
-                    :class="{
-                        'bg-[#F97316] hover:bg-[#ea6c10]': isInRange,
-                        'bg-[#ACAFB5] cursor-not-allowed': !isInRange
-                    }">
-                    <span>Check Out Now</span>
-                </button>
-            @else
-                <!-- Sudah check-in dan check-out (completed) -->
-                <button
-                    class="w-full disabled h-[60px] bg-green-500 text-white rounded-xl text-xl font-medium cursor-not-allowed">
-                    <span>Attendance Completed</span>
-                </button>
+            @if ($todayAttendance)
+                @if ($todayAttendance->is_checked == false)
+                    <!-- Belum check-in sama sekali -->
+                    <button x-on:click="checkIn"
+                        x-bind:disabled="!isInRange || {{ $todaySchedule && !$isWithinCheckInTime ? 'true' : 'false' }}"
+                        class="w-full h-[60px] text-white rounded-xl text-xl font-medium transition-colors"
+                        :class="{
+                            'bg-[#3085FE] hover:bg-[#2a75e6]': isInRange &&
+                                {{ $todaySchedule && $isWithinCheckInTime ? 'true' : 'false' }},
+                            'bg-[#ACAFB5] cursor-not-allowed': !isInRange ||
+                                {{ $todaySchedule && !$isWithinCheckInTime ? 'true' : 'false' }}
+                        }">
+                        <span>Check In Now</span>
+                    </button>
+                @elseif($todayAttendance->is_checked == true || $checkOutRecord->is_checked == false)
+                    <!-- Sudah check-in tapi belum check-out -->
+                    <button x-on:click="checkOut"
+                        x-bind:disabled="!isInRange || {{ $todaySchedule && !$isWithinCheckOutTime ? 'true' : 'false' }}"
+                        class="w-full h-[60px] text-white rounded-xl text-xl font-medium transition-colors"
+                        :class="{
+                            'bg-[#F97316] hover:bg-[#ea6c10]': isInRange &&
+                                {{ $todaySchedule && $isWithinCheckOutTime ? 'true' : 'false' }},
+                            'bg-[#ACAFB5] cursor-not-allowed': !isInRange ||
+                                {{ $todaySchedule && !$isWithinCheckOutTime ? 'true' : 'false' }}
+                        }">
+                        <span>Check Out Now</span>
+                    </button>
+                @else
+                    <!-- Sudah check-in dan check-out (completed) -->
+                    <button
+                        class="w-full disabled h-[60px] bg-green-500 text-white rounded-xl text-xl font-medium cursor-not-allowed">
+                        <span>Attendance Completed</span>
+                    </button>
+                @endif
             @endif
+            <!-- Check-in/Check-out Buttons -->
 
             <p class="text-center text-[#ACAFB5] text-sm">
                 You must be within {{ $allowedRadius }} meters of the office location to check in/out
