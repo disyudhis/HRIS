@@ -19,11 +19,4 @@
             Mulai buat pengajuan perjalanan dinas Anda sekarang.
         @endif
     </p>
-    <a href="{{ route('employee.approvals.business-trips.create') }}"
-        class="mt-4 inline-flex items-center px-4 py-2 bg-[#3085FE] text-white text-sm font-medium rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#3085FE] transition-colors duration-200">
-        <svg class="w-4 h-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd"/>
-        </svg>
-        Buat Pengajuan
-    </a>
 </div>

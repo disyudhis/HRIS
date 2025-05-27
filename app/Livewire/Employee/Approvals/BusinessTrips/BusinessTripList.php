@@ -19,7 +19,7 @@ class BusinessTripList extends Component
     public $notes;
     public $search = '';
 
-    public $statusFilter = 'pending';
+    public $statusFilter = 'all';
 
     public $showModal = false;
     public $showDetailModal = false;
@@ -87,7 +87,7 @@ class BusinessTripList extends Component
                 'start_date' => $trip->start_date->format('d M Y'),
                 'end_date' => $trip->end_date->format('d M Y'),
                 'duration' => $trip->getDurationAttribute(),
-                'estimated_cost' => $trip->estimated_cost,
+                'estimated_cost' => $trip->total_estimated_cost,
                 'status' => $trip->status,
                 'notes' => $trip->notes,
                 'created_at' => $trip->created_at->format('d M Y H:i'),
@@ -198,7 +198,7 @@ class BusinessTripList extends Component
         }
 
         try {
-            $trip->delete();
+            $trip->update(['status' => 'cancelled']);
             $this->dispatch('close-cancel-trip');
             session()->flash('message', 'Pengajuan perjalanan dinas berhasil dibatalkan.');
         } catch (\Exception $e) {
@@ -227,7 +227,8 @@ class BusinessTripList extends Component
             ->when($this->search, function ($query) {
                 $term = '%' . $this->search . '%';
                 return $query->where(function ($q) use ($term) {
-                    $q->where('destination', 'like', $term)->orWhere('purpose', 'like', $term)->orWhere('status', 'like', $term);
+                    $q->where('destination', 'like', $term)->orWhere('purpose', 'like', $term)->orWhere('status', 'like', $term)
+                    ->orWhere('no_reference', 'like', $term);
                 });
             })
             ->orderBy('created_at', 'desc')

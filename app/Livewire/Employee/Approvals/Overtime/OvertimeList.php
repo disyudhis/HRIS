@@ -115,6 +115,7 @@ class OvertimeList extends Component
         ->when($this->search, function ($query) {
             return $query->where(function ($subQuery) {
                 $subQuery->where('reason', 'like', '%' . $this->search . '%')
+                ->orWhere('no_reference', 'like', '%' . $this->search . '%')
                          ->orWhere('tasks', 'like', '%' . $this->search . '%');
             });
         })

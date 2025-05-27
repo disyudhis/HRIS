@@ -50,10 +50,10 @@
                                 <h4 class="text-sm font-medium text-gray-700">Status</h4>
                                 <p class="mt-1 text-sm" x-text="tripData?.status"
                                     :class="{
-                                        'text-yellow-600': tripData?.status === 'pending',
-                                        'text-green-600': tripData?.status === 'approved',
-                                        'text-red-600': tripData?.status === 'rejected',
-                                        'text-gray-600': tripData?.status === 'cancelled'
+                                        'text-yellow-600 uppercase': tripData?.status === 'pending',
+                                        'text-green-600 uppercase': tripData?.status === 'approved',
+                                        'text-red-600 uppercase': tripData?.status === 'rejected',
+                                        'text-gray-600 uppercase': tripData?.status === 'cancelled'
                                     }">
                                 </p>
                             </div>

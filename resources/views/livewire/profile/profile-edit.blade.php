@@ -12,21 +12,14 @@
             <div class="w-6"></div> <!-- Spacer for alignment -->
         </div>
 
-        @if (session()->has('message'))
-            <div class="bg-green-100 border border-green-200 text-green-800 px-4 py-3 rounded-xl mb-6">
-                {{ session('message') }}
-            </div>
-        @endif
+        @include('livewire.profile.partials.flash-notification')
 
         <!-- Profile Photo -->
         <div class="flex flex-col items-center mb-6">
             <div class="relative mb-4">
                 <div class="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden border-2 border-white shadow-md">
                     @if ($photo)
-                        <img src="{{ $photo->temporaryUrl() }}" alt="{{ $user->name }}"
-                            class="w-full h-full object-cover">
-                    @else
-                        <img src="{{ $user->profile_photo_path }}" alt="{{ $user->name }}"
+                        <img src="{{ $photo }}" alt="{{ $user->name }}"
                             class="w-full h-full object-cover">
                     @endif
                 </div>
@@ -94,9 +87,9 @@
                     <div x-show="activeTab === 'account'" class="space-y-4">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label for="name" class="block text-sm font-medium text-gray-700">Name</label>
-                                <input type="text" wire:model="name" id="name"
-                                    class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm focus:border-[#3085FE] focus:ring-[#3085FE] h-12 px-4">
+                                <label for="name" class="block text-sm font-medium text-gray-700">Username</label>
+                                <input type="text" wire:model="name" id="name" readonly
+                                    class="mt-1 block w-full rounded-xl border-gray-300 bg-gray-100 shadow-sm focus:border-[#3085FE] focus:ring-[#3085FE] h-12 px-4">
                                 @error('name')
                                     <span class="text-red-500 text-sm">{{ $message }}</span>
                                 @enderror

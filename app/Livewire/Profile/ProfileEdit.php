@@ -2,10 +2,13 @@
 
 namespace App\Livewire\Profile;
 
+use Intervention\Image\Drivers\Gd\Driver;
+use Intervention\Image\ImageManager;
 use Livewire\Component;
+use Intervention\Image\Image;
 use Livewire\WithFileUploads;
 use Illuminate\Support\Facades\Auth;
-use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
+use Illuminate\Support\Facades\Storage;
 
 class ProfileEdit extends Component
 {
@@ -86,7 +89,7 @@ class ProfileEdit extends Component
         'full_name' => 'nullable|string|max:255',
         'email' => 'required|email|max:255',
         'phone' => 'nullable|string|max:20',
-        'photo' => 'nullable|image|max:2048',
+        'photo' => 'nullable|image|max:2048|mimes:jpeg,png,jpg,gif',
 
         // Additional Information
         'gender' => 'nullable|string|in:laki-laki,perempuan',
@@ -138,7 +141,7 @@ class ProfileEdit extends Component
     public function mount()
     {
         $this->user = Auth::user();
-        $this->userDetails = $this->user->userDetails ?? null;
+        $this->userDetails = $this->user->user_details ?? null;
         $this->user_type = $this->user->user_type ?? null;
 
         // Load user data
@@ -153,6 +156,10 @@ class ProfileEdit extends Component
         $this->email = $this->user->email;
         $this->phone = $this->user->phone;
         $this->employee_id = $this->user->employee_id;
+        $this->photo = Storage::temporaryUrl(
+            $this->user->profile_photo_path,
+            now()->addMinutes(5)
+        );
 
         // Additional Information
         if ($this->userDetails) {
@@ -227,15 +234,18 @@ class ProfileEdit extends Component
         $this->user->email = $this->email;
         $this->user->phone = $this->phone;
 
-        // Handle photo upload to Cloudinary
+        // Handle photo upload to local storage
         if ($this->photo) {
-            if ($this->user->profile_photo_public_id) {
-                Cloudinary::uploadApi()->destroy($this->user->profile_photo_public_id);
+            // Delete old photo if exists
+            if ($this->user->profile_photo_path) {
+                Storage::disk('public')->delete($this->user->profile_photo_path);
             }
-            $profilePhotoUrl = $this->uploadPhotoToCloudinary($this->photo);
-            if ($profilePhotoUrl) {
-                $this->user->profile_photo_path = $profilePhotoUrl['url'];
-                $this->user->profile_photo_public_id = $profilePhotoUrl['public_id'];
+
+            $photoPath = $this->uploadPhotoToStorage($this->photo);
+            if ($photoPath) {
+                $this->user->profile_photo_path = $photoPath;
+                // Remove public_id field since we're not using Cloudinary anymore
+                $this->user->profile_photo_public_id = null;
             }
         }
 
@@ -301,22 +311,34 @@ class ProfileEdit extends Component
         return redirect()->route('profile.edit');
     }
 
-    protected function uploadPhotoToCloudinary($photo)
+    protected function uploadPhotoToStorage($photo)
     {
         try {
-            $uploadedFileUrl = Cloudinary::uploadApi()->upload($photo->getRealPath(), [
-                'folder' => 'profile_photos',
-                'public_id' => 'user_' . $this->user->id . '_' . time(),
-                'overwrite' => true,
-                'resource_type' => 'image',
-                'transformation' => [['width' => 300, 'height' => 300, 'crop' => 'fill', 'gravity' => 'face'], ['quality' => 'auto']],
-            ]);
+            // Generate unique filename
+            $filename = 'profile_' . $this->user->id . '_' . time() . '.' . $photo->getClientOriginalExtension();
 
-            $toArray = $uploadedFileUrl->getArrayCopy();
+            // Create the directory if it doesn't exist
+            $directory = 'profile-photos';
+            if (!Storage::disk('public')->exists($directory)) {
+                Storage::disk('public')->makeDirectory($directory);
+            }
 
-            return $toArray;
+            // Process image with Intervention Image v3
+            $manager = new ImageManager(new Driver());
+            // Resize and optimize image
+            $image = $manager->read($photo)->resize(300, 300);
+
+            // Convert to JPEG and set quality
+            $processedImage = $image->toJpeg(80);
+
+            // Store the processed image
+            $path = $directory . '/' . $filename;
+            Storage::disk('public')->put($path, $processedImage);
+
+            return $path;
+
         } catch (\Exception $e) {
-            \Log::error('Cloudinary upload failed: ' . $e->getMessage());
+            \Log::error('Photo upload failed: ' . $e->getMessage());
             session()->flash('error', 'Failed to upload profile photo: ' . $e->getMessage());
             return null;
         }

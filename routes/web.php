@@ -3,8 +3,6 @@
 use App\Http\Controllers\ApprovalController;
 use App\Http\Controllers\OfficeController;
 use App\Http\Controllers\UserController;
-use App\Models\User;
-use App\Models\Offices;
 use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\ManagerMiddleware;

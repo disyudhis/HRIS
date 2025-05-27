@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Offices;
 use Illuminate\Http\Request;
 
 class OfficeController extends Controller
@@ -41,9 +42,9 @@ class OfficeController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(string $id)
+    public function edit(Offices $office)
     {
-        return view('admin.office.edit');
+        return view('admin.office.edit', compact('office'));
     }
 
     /**

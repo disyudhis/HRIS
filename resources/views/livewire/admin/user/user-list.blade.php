@@ -61,7 +61,7 @@
                             class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                             wire:click="sortBy('name')">
                             <div class="flex items-center">
-                                Name
+                                Username
                                 @if ($sortField === 'name')
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" fill="none"
                                         viewBox="0 0 24 24" stroke="currentColor">

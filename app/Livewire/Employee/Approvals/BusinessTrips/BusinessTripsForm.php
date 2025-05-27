@@ -214,6 +214,7 @@ class BusinessTripsForm extends Component
         try {
             $tripDays = $this->getTotalCost()['tripDays'];
             $totalCost = $this->total_estimated_cost;
+            $no_reference = $this->randomizeNoReference();
             $tripData = [
                 'destination' => $this->destination,
                 'purpose' => $this->purpose,
@@ -222,6 +223,7 @@ class BusinessTripsForm extends Component
                 'transportation' => $this->transportation,
                 'total_days' => $tripDays,
                 'total_estimated_cost' => $totalCost,
+                'no_reference' => $no_reference,
                 'notes' => $this->notes,
                 // 'additional_travelers' => $this->additional_travelers,
                 'updated_at' => now(),
@@ -246,6 +248,12 @@ class BusinessTripsForm extends Component
         } catch (\Exception $e) {
             session()->flash('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
+    }
+
+    public function randomizeNoReference()
+    {
+        $reference_code = 'SPPD-' . strtoupper(uniqid());
+        return $reference_code;
     }
 
     // protected function uploadAttachments()

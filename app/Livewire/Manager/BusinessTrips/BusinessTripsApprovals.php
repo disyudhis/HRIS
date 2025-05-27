@@ -157,6 +157,7 @@ class BusinessTripsApprovals extends Component
                 return $query->whereHas('user', function ($q) {
                     $q->where('name', 'like', '%' . $this->search . '%');
                 })->orWhere('destination', 'like', '%' . $this->search . '%')
+                ->orWhere('no_reference', 'like', '%' . $this->search . '%')
                   ->orWhere('purpose', 'like', '%' . $this->search . '%');
             })
             ->with('user')

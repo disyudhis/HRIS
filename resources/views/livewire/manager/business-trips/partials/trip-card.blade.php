@@ -13,7 +13,12 @@
                 </div>
 
                 <div>
-                    <h3 class="text-lg font-semibold text-gray-900">{{ $trip->user->name }}</h3>
+                    <div class="flex items-center gap-2 mb-1">
+                        <h3 class="text-lg font-semibold text-gray-900">{{ $trip->user->name }}</h3>
+                        <span class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 text-xs font-medium">
+                            {{ $trip->no_reference ?? 'BT-' . str_pad($trip->id, 6, '0', STR_PAD_LEFT) }}
+                        </span>
+                    </div>
                     <div class="flex items-center text-sm text-gray-500 space-x-2">
                         <span>{{ $trip->destination }}</span>
                         <span>•</span>
@@ -101,9 +106,6 @@
                 </div>
             </div>
 
-            <!-- Menghapus bagian expense summary karena tidak ada di model -->
-            <!-- Expenses dapat ditambahkan di masa depan jika ada model/relasi untuk tracking pengeluaran aktual -->
-
             @if($trip->notes)
                 <div class="mt-4">
                     <h4 class="text-sm font-medium text-gray-700">Notes</h4>
@@ -125,8 +127,4 @@
             @endif
         </div>
     </div>
-
-    <!-- Modal removed since cost breakdown is not in the model structure -->
-    <!-- Jika di masa depan ingin menambahkan breakdown, dapat ditambahkan kembali dengan struktur yang sesuai -->
-
 </div>

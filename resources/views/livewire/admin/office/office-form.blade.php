@@ -66,8 +66,10 @@
                 </div>
 
                 <div>
-                    <label for="check_in_radius" class="block text-sm font-medium text-gray-700">Check-in Radius (meters)</label>
-                    <input type="number" wire:model="check_in_radius" id="check_in_radius" min="10" max="1000" step="10" required
+                    <label for="check_in_radius" class="block text-sm font-medium text-gray-700">Check-in Radius
+                        (meters)</label>
+                    <input type="number" wire:model="check_in_radius" id="check_in_radius" min="10"
+                        max="1000" step="10" required
                         class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#3085FE] focus:ring-[#3085FE]">
                     @error('check_in_radius')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -86,27 +88,14 @@
 
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Office Location</label>
-                <div
-                    x-data="officeMap()"
-                    x-init="initMap({{ $latitude ?? 'null' }}, {{ $longitude ?? 'null' }}, {{ $check_in_radius }})"
-                    class="w-full h-96 rounded-lg border z-10 border-gray-300 overflow-hidden relative"
-                    id="office-map" wire:ignore>
-                    <div x-show="isLocating" class="absolute inset-0 bg-white bg-opacity-70 flex items-center justify-center z-10">
-                        <div class="flex flex-col items-center">
-                            <svg class="animate-spin h-8 w-8 text-[#3085FE] mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            <span class="text-sm text-gray-600">{{ $editMode ? 'Loading map...' : 'Getting your location...' }}</span>
-                        </div>
-                    </div>
-                </div>
 
-                <div class="grid grid-cols-2 gap-4 mt-2">
+                <!-- Latitude and Longitude Inputs -->
+                <div class="grid sm:grid-cols-3 grid-cols-2 gap-4 mb-4">
                     <div>
                         <label for="latitude" class="block text-sm font-medium text-gray-700">Latitude</label>
-                        <input type="text" wire:model="latitude" id="latitude" required readonly
-                            class="mt-1 block w-full rounded-md border-gray-300 bg-gray-100 shadow-sm">
+                        <input type="number" wire:model.live="latitude" id="latitude" step="any" required
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#3085FE] focus:ring-[#3085FE]"
+                            placeholder="e.g. -6.2088">
                         @error('latitude')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
@@ -114,16 +103,31 @@
 
                     <div>
                         <label for="longitude" class="block text-sm font-medium text-gray-700">Longitude</label>
-                        <input type="text" wire:model="longitude" id="longitude" required readonly
-                            class="mt-1 block w-full rounded-md border-gray-300 bg-gray-100 shadow-sm">
+                        <input type="number" wire:model.live="longitude" id="longitude" step="any" required
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#3085FE] focus:ring-[#3085FE]"
+                            placeholder="e.g. 106.8456">
                         @error('longitude')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
                     </div>
+                    <div class="flex items-end">
+                        <button type="button" onclick="getMyLocation()"
+                            class="bg-gray-500 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-600 transition-colors">
+                            📍 Use My Location
+                        </button>
+                    </div>
                 </div>
 
-                <p class="text-sm text-gray-500 mt-2">
-                    Click on the map to {{ $editMode ? 'update' : 'set' }} the office location. The circle represents the check-in radius.
+
+
+                <div id="office-map" wire:ignore
+                    class="w-full h-96 rounded-lg border border-gray-300 overflow-hidden relative mb-2"></div>
+
+                <p class="text-sm text-gray-500">
+                    • Enter latitude and longitude coordinates manually, or<br>
+                    • Click on the map to {{ $editMode ? 'update' : 'set' }} the office location<br>
+                    • Use "Use My Location" button to get your current position<br>
+                    The blue circle represents the check-in radius.
                 </p>
             </div>
 
@@ -137,159 +141,170 @@
 </div>
 
 @push('scripts')
-<script>
-    function officeMap() {
-        return {
-            map: null,
-            marker: null,
-            circle: null,
-            userMarker: null,
-            isLocating: false,
+    <script>
+        let map;
+        let marker;
+        let circle;
+        let isMapInitialized = false;
 
-            initMap(lat, lng, radius) {
-                this.isLocating = true;
+        // Initialize map when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeMap();
+        });
 
-                // Initialize map with a default view
-                this.map = L.map('office-map').setView([0, 0], 2);
+        function initializeMap() {
+            if (isMapInitialized) return;
 
-                // Add tile layer (OpenStreetMap)
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                }).addTo(this.map);
+            // Get initial coordinates from Livewire
+            const initialLat = @this.latitude;
+            const initialLng = @this.longitude;
+            const initialRadius = @this.check_in_radius || 100;
 
-                // Force a resize to ensure map renders correctly
-                this.map.invalidateSize();
+            // Initialize map
+            map = L.map('office-map').setView([0, 0], 2);
 
-                // If we already have coordinates, add a marker
-                if (lat && lng) {
-                    this.addMarker(lat, lng, radius);
-                    this.map.setView([lat, lng], 15);
-                    this.isLocating = false;
-                } else {
-                    // Otherwise, get user's location
-                    window.LocationService.getUserLocation(
-                        // Success callback
-                        (position) => {
-                            const userLat = position.coords.latitude;
-                            const userLng = position.coords.longitude;
+            // Add tile layer
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
 
-                            // Add user location marker
-                            this.addUserLocationMarker(userLat, userLng);
+            // If coordinates already exist (edit mode), use them
+            if (initialLat && initialLng) {
+                addMarker(initialLat, initialLng, initialRadius);
+            } else {
+                // For new office, get user's current location
+                getUserLocationForInitialSetup();
+            }
 
-                            // Center on user's location and zoom in
-                            this.map.setView([userLat, userLng], 16);
+            // Handle map clicks
+            map.on('click', function(e) {
+                const lat = e.latlng.lat;
+                const lng = e.latlng.lng;
 
-                            // Pre-fill the latitude and longitude with user's location
-                            @this.call('mapLocationSelected', userLat, userLng);
+                // Update Livewire properties
+                @this.set('latitude', lat);
+                @this.set('longitude', lng);
 
-                            // Add a marker at user's location as the initial office location
-                            this.addMarker(userLat, userLng, radius);
+                // Update map marker
+                addMarker(lat, lng, @this.check_in_radius || 100);
+            });
 
-                            this.isLocating = false;
-                        },
-                        // Error callback
-                        (error) => {
-                            console.error("Geolocation error:", error);
-                            this.isLocating = false;
-                            alert("Failed to get your location. Please click on the map to set the office location.");
-                        }
-                    );
-                }
+            isMapInitialized = true;
+        }
 
-                // Add click event to map
-                this.map.on('click', (e) => {
-                    const { lat, lng } = e.latlng;
-                    this.addMarker(lat, lng, radius);
+        function getUserLocationForInitialSetup() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
 
-                    // Update Livewire component with location data
-                    @this.call('mapLocationSelected', lat, lng);
+                    // Update Livewire properties
+                    @this.set('latitude', lat);
+                    @this.set('longitude', lng);
+
+                    // Update map
+                    addMarker(lat, lng, @this.check_in_radius || 100);
+
+                }, function(error) {
+                    console.log('Geolocation error:', error);
+                    // If geolocation fails, just show world map without marker
+                    // User can still click on map or enter coordinates manually
                 });
-
-                // Watch for changes to check-in radius
-                this.$watch('$wire.check_in_radius', (newRadius) => {
-                    if (this.marker) {
-                        const position = this.marker.getLatLng();
-                        this.addMarker(position.lat, position.lng, newRadius);
-                    }
-                });
-
-                // Handle window resize events
-                window.addEventListener('resize', () => {
-                    if (this.map) {
-                        this.map.invalidateSize();
-                    }
-                });
-            },
-
-            addUserLocationMarker(lat, lng) {
-                // Remove existing user marker if it exists
-                if (this.userMarker) {
-                    this.map.removeLayer(this.userMarker);
-                }
-
-                // Create a custom icon for user location
-                const userIcon = L.divIcon({
-                    html: `
-                        <div class="relative">
-                            <div class="absolute inset-0 bg-blue-500 opacity-25 rounded-full animate-ping"></div>
-                            <div class="relative bg-blue-500 w-4 h-4 rounded-full border-2 border-white"></div>
-                        </div>
-                    `,
-                    className: 'user-location-marker',
-                    iconSize: [20, 20],
-                    iconAnchor: [10, 10]
-                });
-
-                // Add user location marker
-                this.userMarker = L.marker([lat, lng], { icon: userIcon }).addTo(this.map);
-                this.userMarker.bindPopup("Your current location").openPopup();
-            },
-
-            addMarker(lat, lng, radius) {
-                // Remove existing marker and circle
-                if (this.marker) {
-                    this.map.removeLayer(this.marker);
-                }
-
-                if (this.circle) {
-                    this.map.removeLayer(this.circle);
-                }
-
-                // Create a custom icon for office location
-                const officeIcon = L.icon({
-                    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-                    iconSize: [25, 41],
-                    iconAnchor: [12, 41],
-                    popupAnchor: [1, -34],
-                    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-                    shadowSize: [41, 41]
-                });
-
-                // Add new marker
-                this.marker = L.marker([lat, lng], { icon: officeIcon }).addTo(this.map);
-                this.marker.bindPopup("Office location").openPopup();
-
-                // Add circle to represent check-in radius
-                this.circle = L.circle([lat, lng], {
-                    color: '#3085FE',
-                    fillColor: '#3085FE',
-                    fillOpacity: 0.2,
-                    radius: radius
-                }).addTo(this.map);
             }
         }
-    }
-</script>
+
+        function addMarker(lat, lng, radius) {
+            // Remove existing marker and circle
+            if (marker) {
+                map.removeLayer(marker);
+            }
+            if (circle) {
+                map.removeLayer(circle);
+            }
+
+            // Add new marker
+            marker = L.marker([lat, lng]).addTo(map);
+            marker.bindPopup(`Office Location<br>Lat: ${lat.toFixed(6)}<br>Lng: ${lng.toFixed(6)}`);
+
+            // Add circle for check-in radius
+            circle = L.circle([lat, lng], {
+                color: '#3085FE',
+                fillColor: '#3085FE',
+                fillOpacity: 0.2,
+                radius: radius
+            }).addTo(map);
+
+            // Center map on marker
+            map.setView([lat, lng], 15);
+        }
+
+        function getMyLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+
+                    // Update Livewire properties
+                    @this.set('latitude', lat);
+                    @this.set('longitude', lng);
+
+                    // Update map
+                    addMarker(lat, lng, @this.check_in_radius || 100);
+
+                }, function(error) {
+                    alert('Unable to get your location. Please enter coordinates manually.');
+                });
+            } else {
+                alert('Geolocation is not supported by this browser.');
+            }
+        }
+
+        // Listen for Livewire updates to coordinates
+        document.addEventListener('livewire:initialized', () => {
+            @this.on('refreshMap', (data) => {
+                if (data.latitude && data.longitude) {
+                    addMarker(data.latitude, data.longitude, data.radius);
+                }
+            });
+        });
+
+        // Watch for changes in latitude/longitude inputs
+        document.addEventListener('input', function(e) {
+            if (e.target.id === 'latitude' || e.target.id === 'longitude') {
+                setTimeout(() => {
+                    const lat = parseFloat(document.getElementById('latitude').value);
+                    const lng = parseFloat(document.getElementById('longitude').value);
+
+                    if (!isNaN(lat) && !isNaN(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <=
+                        180) {
+                        addMarker(lat, lng, @this.check_in_radius || 100);
+                    }
+                }, 500); // Debounce untuk menghindari terlalu banyak update
+            }
+        });
+
+        // Update circle when radius changes
+        document.addEventListener('input', function(e) {
+            if (e.target.id === 'check_in_radius') {
+                setTimeout(() => {
+                    const lat = parseFloat(document.getElementById('latitude').value);
+                    const lng = parseFloat(document.getElementById('longitude').value);
+                    const radius = parseInt(e.target.value);
+
+                    if (!isNaN(lat) && !isNaN(lng) && radius) {
+                        addMarker(lat, lng, radius);
+                    }
+                }, 300);
+            }
+        });
+    </script>
 @endpush
 
 @push('styles')
-<style>
-    #office-map { height: 400px; }
-
-    .user-location-marker {
-        background: transparent;
-        border: none;
-    }
-</style>
+    <style>
+        #office-map {
+            height: 400px;
+            z-index: 1;
+        }
+    </style>
 @endpush
-

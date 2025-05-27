@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('business_trips', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->string('no_reference')->unique()->nullable();
             $table->string('destination');
             $table->text('purpose');
             $table->date('start_date');
@@ -22,7 +23,7 @@ return new class extends Migration
             $table->decimal('total_estimated_cost', 12, 2)->default(0)->nullable();
             $table->integer('total_days')->default(1)->nullable();
             $table->text('notes')->nullable();
-            $table->enum('status', ['pending', 'approved', 'rejected', 'completed'])->default('pending');
+            $table->enum('status', ['pending', 'approved', 'rejected', 'completed', 'cancelled'])->default('pending');
             $table->foreignId('approved_by')->nullable()->constrained('users')->onDelete('set null');
             $table->timestamp('approved_at')->nullable();
             $table->text('rejection_reason')->nullable();

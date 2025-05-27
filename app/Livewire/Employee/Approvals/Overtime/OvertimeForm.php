@@ -214,7 +214,7 @@ class OvertimeForm extends Component
 
             // Hitung estimasi biaya lembur
             $estimatedCost = Overtime::calculateCost($overtimeDuration);
-
+            $no_reference = $this->generateReferenceNumber();
             // Simpan data overtime
             Overtime::create([
                 'user_id' => auth()->id(),
@@ -222,6 +222,7 @@ class OvertimeForm extends Component
                 'type' => $this->type,
                 'start_time' => $this->start_time,
                 'end_time' => $this->end_time,
+                'no_reference' => $no_reference,
                 'reason' => $this->reason,
                 'status' => 'pending', // Status default: pending
                 'estimated_cost' => $estimatedCost,
@@ -249,6 +250,11 @@ class OvertimeForm extends Component
         }
     }
 
+
+    public function generateReferenceNumber()
+    {
+        return 'OVT-' . strtoupper(uniqid());
+    }
     /**
      * Update properti waktu lembur ketika berubah
      */

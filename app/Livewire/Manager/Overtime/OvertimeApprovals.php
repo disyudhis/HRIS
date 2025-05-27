@@ -143,8 +143,8 @@ class OvertimeApprovals extends Component
                     ->whereHas('user', function ($q) {
                         $q->where('name', 'like', '%' . $this->search . '%');
                     })
-                    ->orWhere('reason', 'like', '%' . $this->search . '%')
-                    ->orWhere('tasks', 'like', '%' . $this->search . '%');
+                    ->orWhere('no_reference', 'like', '%' . $this->search . '%')
+                    ->orWhere('reason', 'like', '%' . $this->search . '%');
             })
             ->with('user')
             ->orderBy('date', 'desc')

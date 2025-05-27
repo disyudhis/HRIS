@@ -66,7 +66,7 @@ class ApprovalController extends Controller
         return view('manager.overtime.index');
     }
 
-    public function businessTrip(){
+    public function businessTrips(){
         return view('manager.business-trips.index');
     }
 }
