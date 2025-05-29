@@ -37,6 +37,13 @@ class CheckIn extends Component
     public $isWithinCheckInTime = false;
     public $isWithinCheckOutTime = false;
 
+    // Manager properties
+    public $isManager = false;
+    public $managerWorkingHours = [
+        'start' => '08:00',
+        'end' => '17:00'
+    ];
+
     protected $listeners = ['locationUpdated', 'performCheckIn', 'performCheckOut'];
 
     public function mount()
@@ -45,15 +52,114 @@ class CheckIn extends Component
             return;
         }
 
-        $this->loadTodaySchedule();
-        $this->loadTodayAttendance();
-        $this->checkScheduleTime();
-        // dd($this->isWithinCheckOutTime);
+        $this->checkUserRole();
+
+        if ($this->isManager) {
+            $this->handleManagerAttendance();
+        } else {
+            $this->loadTodaySchedule();
+            $this->loadTodayAttendance();
+            $this->checkScheduleTime();
+        }
     }
 
     public function render()
     {
         return view('livewire.employee.dashboard.check-in');
+    }
+
+    /**
+     * Check if current user is a manager
+     */
+    private function checkUserRole()
+    {
+        $user = Auth::user();
+        $this->isManager = $user->role === 'manager' || $user->user_type === 'manager';
+    }
+
+    /**
+     * Handle manager attendance (no schedule required)
+     */
+    private function handleManagerAttendance()
+    {
+        $this->createOrLoadManagerSchedule();
+        $this->loadTodayAttendance();
+        $this->checkManagerWorkingTime();
+    }
+
+    /**
+     * Create or load manager's daily schedule
+     */
+    private function createOrLoadManagerSchedule()
+    {
+        $this->todaySchedule = Schedule::where('user_id', Auth::id())
+            ->whereDate('date', Carbon::today())
+            ->first();
+
+        if (!$this->todaySchedule) {
+            $this->todaySchedule = Schedule::create([
+                'user_id' => Auth::id(),
+                'date' => Carbon::today(),
+                'start_time' => $this->managerWorkingHours['start'],
+                'end_time' => $this->managerWorkingHours['end'],
+                'is_checked' => false,
+                'notes' => 'Auto-generated manager schedule',
+                'created_by' => Auth::id()
+            ]);
+        }
+
+        $this->scheduleStatus = "Manager working hours: {$this->managerWorkingHours['start']} - {$this->managerWorkingHours['end']}";
+    }
+
+    /**
+     * Check manager working time (more flexible than employee)
+     */
+    private function checkManagerWorkingTime()
+    {
+        $now = Carbon::now();
+        $workStart = Carbon::parse($this->managerWorkingHours['start']);
+        $workEnd = Carbon::parse($this->managerWorkingHours['end']);
+        $alreadyCheckedIn = $this->todayAttendance && $this->todayAttendance->is_checked;
+
+        // Managers can check in anytime during working hours or 1 hour before
+        $checkInWindow = $workStart->copy()->subHour();
+
+        // Managers can check out until 3 hours after working hours
+        $checkOutWindow = $workEnd->copy()->addHours(3);
+
+        if ($now->between($checkInWindow, $workEnd)) {
+            $this->isWithinCheckInTime = true;
+        }
+
+        if ($now->gte($workStart) && $now->lte($checkOutWindow)) {
+            $this->isWithinCheckOutTime = true;
+        }
+
+        $this->setManagerScheduleStatusMessage($now, $checkInWindow, $workStart, $workEnd, $checkOutWindow, $alreadyCheckedIn);
+    }
+
+    /**
+     * Set manager schedule status message
+     */
+    private function setManagerScheduleStatusMessage($now, $checkInWindow, $workStart, $workEnd, $checkOutWindow, $alreadyCheckedIn)
+    {
+        if (!$alreadyCheckedIn) {
+            if ($now->lt($checkInWindow)) {
+                $this->scheduleStatus = 'You can check in starting from ' . $checkInWindow->format('h:i A') . ' (1 hour before work starts).';
+            } elseif ($now->between($checkInWindow, $workEnd)) {
+                $this->scheduleStatus = 'You can check in now. Working hours: ' . $workStart->format('h:i A') . ' - ' . $workEnd->format('h:i A');
+            } else {
+                $this->scheduleStatus = 'Working hours have ended. You can still check in if needed.';
+                $this->isWithinCheckInTime = true; // Managers have flexibility
+            }
+        } else {
+            if ($now->lte($checkOutWindow)) {
+                $this->scheduleStatus = 'You can check out until ' . $checkOutWindow->format('h:i A') . '.';
+            } else {
+                $this->scheduleStatus = 'Check-out window has ended, but you can still check out if needed.';
+                $this->isWithinCheckOutTime = true; // Managers have flexibility
+            }
+        }
     }
 
     /**
@@ -95,12 +201,23 @@ class CheckIn extends Component
      */
     public function loadTodayAttendance()
     {
-        $this->todayAttendance = Attendance::with('schedule')
-            ->whereHas('schedule', function ($query) {
-                $query->where('user_id', Auth::id())->whereDate('date', Carbon::today());
-            })
-            ->where('type', 'CHECK_IN')
-            ->first();
+        if ($this->isManager) {
+            // For managers, look for attendance based on auto-generated schedule
+            $this->todayAttendance = Attendance::with('schedule')
+                ->whereHas('schedule', function ($query) {
+                    $query->where('user_id', Auth::id())->whereDate('date', Carbon::today());
+                })
+                ->where('type', 'CHECK_IN')
+                ->first();
+        } else {
+            // Original logic for employees
+            $this->todayAttendance = Attendance::with('schedule')
+                ->whereHas('schedule', function ($query) {
+                    $query->where('user_id', Auth::id())->whereDate('date', Carbon::today());
+                })
+                ->where('type', 'CHECK_IN')
+                ->first();
+        }
 
         if ($this->todayAttendance && $this->todayAttendance->is_checked) {
             $this->loadCheckOutRecord();
@@ -172,12 +289,10 @@ class CheckIn extends Component
         // If current time is before midnight and after start time
         if ($now->gte($checkInWindow) && $now->lt($scheduleStart)) {
             $this->isWithinCheckInTime = true;
-            dd('cross');
         }
         // If current time is after midnight but before end time
         elseif ($now->lte($checkOutWindow)) {
             $this->isWithinCheckInTime = true;
-            dd('criss');
             $this->isWithinCheckOutTime = true;
         } else {
             $this->isWithinCheckInTime = false;
@@ -193,11 +308,11 @@ class CheckIn extends Component
     {
         if ($now->between($checkInWindow, $scheduleEnd)) {
             $this->isWithinCheckInTime = true;
-        }elseif($now->gte($scheduleEnd) && $now->lte($checkOutWindow)) {
+        } elseif($now->gte($scheduleEnd) && $now->lte($checkOutWindow)) {
             $this->isWithinCheckInTime = false;
             $this->isWithinCheckOutTime = true;
             $this->setScheduleStatusMessage($now, $checkInWindow, $scheduleStart, $scheduleEnd, $checkOutWindow, $alreadyCheckedIn);
-        }  else {
+        } else {
             $this->isWithinCheckInTime = false;
             $this->isWithinCheckOutTime = false;
         }
@@ -244,6 +359,11 @@ class CheckIn extends Component
         }
 
         try {
+            // Create attendance record if doesn't exist
+            if (!$this->todayAttendance) {
+                $this->createCheckInRecord();
+            }
+
             $this->todayAttendance->checked_time = Carbon::now();
             $this->todayAttendance->latitude = $this->userLatitude;
             $this->todayAttendance->longitude = $this->userLongitude;
@@ -266,6 +386,20 @@ class CheckIn extends Component
     }
 
     /**
+     * Create check-in record for manager
+     */
+    private function createCheckInRecord()
+    {
+        $this->todayAttendance = Attendance::create([
+            'type' => 'CHECK_IN',
+            'schedule_id' => $this->todaySchedule->id,
+            'is_checked' => false,
+            'status' => 'ABSENT',
+            'notes' => $this->isManager ? 'Manager check-in' : 'Employee check-in',
+        ]);
+    }
+
+    /**
      * Validate check-in conditions
      *
      * @return bool
@@ -277,14 +411,24 @@ class CheckIn extends Component
             return false;
         }
 
-        if (!$this->isWithinCheckInTime && $this->todaySchedule) {
-            $this->errorMessage = $this->scheduleStatus;
-            return false;
-        }
+        if ($this->isManager) {
+            // Managers have more flexible check-in rules
+            if ($this->todayAttendance && $this->todayAttendance->is_checked) {
+                $this->errorMessage = "You have already checked in today.";
+                return false;
+            }
+            return true;
+        } else {
+            // Original validation for employees
+            if (!$this->isWithinCheckInTime && $this->todaySchedule) {
+                $this->errorMessage = $this->scheduleStatus;
+                return false;
+            }
 
-        if (!$this->todaySchedule) {
-            $this->errorMessage = "You don't have a schedule for today. Please contact your manager.";
-            return false;
+            if (!$this->todaySchedule) {
+                $this->errorMessage = "You don't have a schedule for today. Please contact your manager.";
+                return false;
+            }
         }
 
         return true;
@@ -364,9 +508,16 @@ class CheckIn extends Component
         $now = Carbon::now();
         $scheduleStart = Carbon::parse($this->todaySchedule->start_time);
 
-        // If check-in is more than 15 minutes late, mark as 'late'
-        if ($now->gt($scheduleStart->copy()->addMinutes(15))) {
-            return 'LATE';
+        if ($this->isManager) {
+            // Managers have more lenient late policy
+            if ($now->gt($scheduleStart->copy()->addMinutes(30))) {
+                return 'LATE';
+            }
+        } else {
+            // Original logic for employees
+            if ($now->gt($scheduleStart->copy()->addMinutes(15))) {
+                return 'LATE';
+            }
         }
 
         return 'PRESENT';
@@ -382,7 +533,7 @@ class CheckIn extends Component
             'schedule_id' => $this->todaySchedule->id,
             'is_checked' => false,
             'status' => 'ABSENT',
-            'notes' => 'Auto-generated check-out record',
+            'notes' => $this->isManager ? 'Auto-generated manager check-out record' : 'Auto-generated check-out record',
         ]);
     }
 }
