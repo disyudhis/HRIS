@@ -5,7 +5,7 @@
             <!-- Profile Photo -->
             <div class="relative mb-4">
                 <div class="w-32 h-32 rounded-full overflow-hidden border-2 border-white shadow-md">
-                    <img src="{{ $user->profile_photo_path }}" alt="{{ $user->name }}" class="w-full h-full object-cover">
+                    <img src="{{ $photo }}" alt="{{ $user->name }}" class="w-full h-full object-cover">
                 </div>
             </div>
 
@@ -181,7 +181,7 @@
                         <div class="flex flex-col items-center mb-8">
                             <div class="relative mb-4">
                                 <div class="w-40 h-40 rounded-full overflow-hidden border-4 border-white shadow-md">
-                                    <img src="{{ $user->profile_photo_path }}" alt="{{ $user->name }}"
+                                    <img src="{{ $photo }}" alt="{{ $user->name }}"
                                         class="w-full h-full object-cover">
                                 </div>
 
