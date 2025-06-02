@@ -5,7 +5,6 @@ namespace App\Livewire\Profile;
 use Intervention\Image\Drivers\Gd\Driver;
 use Intervention\Image\ImageManager;
 use Livewire\Component;
-use Intervention\Image\Image;
 use Livewire\WithFileUploads;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -26,6 +25,7 @@ class ProfileEdit extends Component
     public $phone;
     public $employee_id;
     public $photo;
+    public $current_photo; // Add this property to store current photo URL
 
     // Additional Information
     public $gender;
@@ -156,10 +156,13 @@ class ProfileEdit extends Component
         $this->email = $this->user->email;
         $this->phone = $this->user->phone;
         $this->employee_id = $this->user->employee_id;
-        $this->photo = Storage::temporaryUrl(
-            $this->user->profile_photo_path,
-            now()->addMinutes(5)
-        );
+
+        // Set current photo URL for display
+        if ($this->user->profile_photo_path) {
+            $this->current_photo = Storage::url($this->user->profile_photo_path);
+        } else {
+            $this->current_photo = null;
+        }
 
         // Additional Information
         if ($this->userDetails) {
@@ -219,6 +222,18 @@ class ProfileEdit extends Component
         }
     }
 
+    // Add method to get photo URL for display
+    public function getPhotoUrlProperty()
+    {
+        // If new photo is uploaded, show temporary URL
+        if ($this->photo && is_object($this->photo)) {
+            return $this->photo->temporaryUrl();
+        }
+
+        // Otherwise show current photo
+        return $this->current_photo;
+    }
+
     public function updateProfile()
     {
         $this->validate();
@@ -235,7 +250,7 @@ class ProfileEdit extends Component
         $this->user->phone = $this->phone;
 
         // Handle photo upload to local storage
-        if ($this->photo) {
+        if ($this->photo && is_object($this->photo)) {
             // Delete old photo if exists
             if ($this->user->profile_photo_path) {
                 Storage::disk('public')->delete($this->user->profile_photo_path);
@@ -246,6 +261,9 @@ class ProfileEdit extends Component
                 $this->user->profile_photo_path = $photoPath;
                 // Remove public_id field since we're not using Cloudinary anymore
                 $this->user->profile_photo_public_id = null;
+
+                // Update current photo URL
+                $this->current_photo = Storage::url($photoPath);
             }
         }
 
@@ -306,6 +324,9 @@ class ProfileEdit extends Component
             $this->user->user_details()->create($detailsData);
         }
 
+        // Reset photo property after successful save
+        $this->photo = null;
+
         session()->flash('message', 'Profile successfully updated.');
 
         return redirect()->route('profile.edit');
@@ -336,7 +357,6 @@ class ProfileEdit extends Component
             Storage::disk('public')->put($path, $processedImage);
 
             return $path;
-
         } catch (\Exception $e) {
             \Log::error('Photo upload failed: ' . $e->getMessage());
             session()->flash('error', 'Failed to upload profile photo: ' . $e->getMessage());

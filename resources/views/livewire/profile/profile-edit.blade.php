@@ -17,12 +17,35 @@
         <!-- Profile Photo -->
         <div class="flex flex-col items-center mb-6">
             <div class="relative mb-4">
-                <div class="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden border-2 border-white shadow-md">
-                    @if ($photo)
-                        <img src="{{ $photo }}" alt="{{ $user->name }}"
-                            class="w-full h-full object-cover">
+                <div
+                    class="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden border-2 border-white shadow-md bg-gray-200">
+                    @if ($this->photoUrl)
+                        <img src="{{ $this->photoUrl }}" alt="{{ $user->name }}" class="w-full h-full object-cover">
+                    @else
+                        <!-- Default avatar placeholder -->
+                        <div class="w-full h-full flex items-center justify-center bg-gray-300">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-500" fill="none"
+                                viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                        </div>
                     @endif
+
+                    <!-- Loading overlay when uploading -->
+                    <div wire:loading wire:target="photo"
+                        class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-full">
+                        <svg class="animate-spin h-8 w-8 text-white" xmlns="http://www.w3.org/2000/svg" fill="none"
+                            viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                            </path>
+                        </svg>
+                    </div>
                 </div>
+
                 <label for="photo"
                     class="absolute bottom-0 right-0 bg-[#3085FE] rounded-full p-2 shadow-md cursor-pointer hover:bg-blue-600 transition">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none"
@@ -33,11 +56,22 @@
                             d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
                 </label>
-                <input type="file" wire:model="photo" id="photo" class="hidden" accept="image/*">
+
+                <input type="file" wire:model.live="photo" id="photo" class="hidden"
+                    accept="image/jpeg,image/png,image/jpg,image/gif">
             </div>
+
             @error('photo')
                 <span class="text-red-500 text-sm">{{ $message }}</span>
             @enderror
+
+            <!-- Optional: Show file info when selected -->
+            @if ($photo && is_object($photo))
+                <div class="text-sm text-gray-600 text-center">
+                    <p>{{ $photo->getClientOriginalName() }}</p>
+                    <p>{{ number_format($photo->getSize() / 1024, 2) }} KB</p>
+                </div>
+            @endif
         </div>
 
         <!-- Form Sections -->
@@ -95,7 +129,8 @@
                                 @enderror
                             </div>
                             <div>
-                                <label for="full_name" class="block text-sm font-medium text-gray-700">Full Name</label>
+                                <label for="full_name" class="block text-sm font-medium text-gray-700">Full
+                                    Name</label>
                                 <input type="text" wire:model="full_name" id="full_name"
                                     class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm focus:border-[#3085FE] focus:ring-[#3085FE] h-12 px-4">
                                 @error('full_name')
@@ -556,7 +591,6 @@
                                     Aktif
                                     BPJS</label>
                                 <input type="date" wire:model.live="bpjs_active_date" id="bpjs_active_date"
-
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#3085FE] focus:ring-[#3085FE]">
                             </div>
                             @error('bpjs_active_date')
@@ -601,7 +635,6 @@
                                     Aktif
                                     DLPK</label>
                                 <input type="date" wire:model.live="dlpk_active_date" id="dlpk_active_date"
-
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#3085FE] focus:ring-[#3085FE]">
                             </div>
                             @error('dlpk_active_date')
@@ -618,7 +651,6 @@
                                     class="block text-sm font-medium text-gray-700">Pendidikan
                                     Terakhir</label>
                                 <input type="text" wire:model.live="pendidikan_terakhir" id="pendidikan_terakhir"
-
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#3085FE] focus:ring-[#3085FE]">
                             </div>
                             @error('pendidikan_terakhir')
@@ -635,8 +667,7 @@
                             @enderror
 
                             <div>
-                                <label for="gelar"
-                                    class="block text-sm font-medium text-gray-700">Gelar</label>
+                                <label for="gelar" class="block text-sm font-medium text-gray-700">Gelar</label>
                                 <input type="text" wire:model.live="gelar" id="gelar"
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#3085FE] focus:ring-[#3085FE]">
                             </div>
