@@ -24,7 +24,7 @@
                         <span>•</span>
                         <span>{{ $overtime->start_time->format('H:i') }} - {{ $overtime->end_time->format('H:i') }}</span>
                         <span class="px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 text-xs">
-                            {{ $overtime->duration }} hours
+                            {{ $overtime->duration }}
                         </span>
                     </div>
                 </div>
@@ -73,7 +73,7 @@
                         </div>
                         <div class="bg-gray-50 rounded-lg p-2">
                             <p class="text-xs text-gray-500">Duration</p>
-                            <p class="text-sm font-semibold text-gray-800">{{ $overtime->duration }} hours</p>
+                            <p class="text-sm font-semibold text-gray-800">{{ $overtime->duration }}</p>
                         </div>
                     </div>
                     <div class="mt-2 bg-orange-50 rounded-lg p-3">
@@ -100,7 +100,7 @@
                              x-transition:enter-start="opacity-0 transform -translate-y-2"
                              x-transition:enter-end="opacity-100 transform translate-y-0"
                              class="mt-2 text-xs text-gray-600 bg-gray-50 p-2 rounded">
-                            <p>Calculation: Rp. {{ number_format(\App\Models\Overtime::HOURLY_RATE, 0) }} × {{ $overtime->duration }} hours = Rp. {{ number_format($overtime->estimated_cost, 0) }}</p>
+                            <p>Calculation: Rp. {{ number_format(\App\Models\Overtime::HOURLY_RATE, 0) }} × {{ $overtime->duration }} = Rp. {{ number_format($overtime->estimated_cost, 0) }}</p>
                             @if($overtime->duration > \App\Models\Overtime::MAX_PAID_HOURS)
                                 <p class="text-orange-600 mt-1">Note: Compensation capped at {{ \App\Models\Overtime::MAX_PAID_HOURS }} hours (Rp. {{ number_format(\App\Models\Overtime::MAX_OVERTIME_COST, 0) }} max)</p>
                             @endif

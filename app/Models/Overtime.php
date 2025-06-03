@@ -51,7 +51,15 @@ class Overtime extends Model
         $start = $this->start_time;
         $end = $this->end_time;
 
-        return $start->diffInHours($end);
+        $totalMinutes = $start->diffInMinutes($end);
+        $hours = intval($totalMinutes / 60);
+        $minutes = $totalMinutes % 60;
+
+        if ($hours > 0) {
+            return $minutes > 0 ? "{$hours} jam {$minutes} menit" : "{$hours} jam";
+        }
+
+        return "{$minutes} menit";
     }
 
     public function getStatusColorAttribute()

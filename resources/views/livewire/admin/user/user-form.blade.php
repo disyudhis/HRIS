@@ -296,15 +296,6 @@
                     </div>
 
                     <div>
-                        <label for="child" class="block text-sm font-medium text-gray-700">Jumlah Anak</label>
-                        <input type="number" wire:model.live="child" id="child" min="0"
-                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#3085FE] focus:ring-[#3085FE]">
-                        @error('child')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <div>
                         <label for="mother_name" class="block text-sm font-medium text-gray-700">Nama Ibu
                             Kandung</label>
                         <input type="text" wire:model.live="mother_name" id="mother_name"
