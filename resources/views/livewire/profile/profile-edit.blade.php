@@ -66,12 +66,12 @@
             @enderror
 
             <!-- Optional: Show file info when selected -->
-            @if ($photo && is_object($photo))
+            {{-- @if ($photo && is_object($photo))
                 <div class="text-sm text-gray-600 text-center">
                     <p>{{ $photo->getClientOriginalName() }}</p>
                     <p>{{ number_format($photo->getSize() / 1024, 2) }} KB</p>
                 </div>
-            @endif
+            @endif --}}
         </div>
 
         <!-- Form Sections -->
