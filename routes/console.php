@@ -13,4 +13,4 @@ Schedule::command('manager:handle-absent --date=' . now()->subDays(3)->format('Y
     ->withoutOverlapping()
     ->onOneServer()
     ->appendOutputTo(storage_path('logs/manager-absent-weekly.log'));
-Schedule::command('app:process-attendance')->everyMinute()->evenInMaintenanceMode()->appendOutputTo(storage_path('logs/attendance-scheduler.log'));
+Schedule::command('app:process-attendance')->everySixHours()->evenInMaintenanceMode()->appendOutputTo(storage_path('logs/attendance-scheduler.log'));
