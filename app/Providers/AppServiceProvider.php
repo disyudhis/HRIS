@@ -17,14 +17,5 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        $this->app->resolving(Schedule::class, function ($schedule) {
-            $schedule->onEvent(function ($event) {
-                Log::info("Scheduled event started: {$event->description}");
-            });
-
-            $schedule->onFailure(function ($event, $output) {
-                Log::error("Scheduled event failed: {$event->description}", ['output' => $output]);
-            });
-        });
     }
 }
