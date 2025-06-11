@@ -10,7 +10,7 @@ class LoginForm extends Component
 {
     public $username;
     public $password;
-    public $remember = true;
+    public $remember = false;
     protected $rules = [
         'username' => 'required|string',
         'password' => 'required',
