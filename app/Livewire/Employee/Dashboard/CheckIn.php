@@ -41,7 +41,7 @@ class CheckIn extends Component
     public $isManager = false;
     public $managerWorkingHours = [
         'start' => '08:00',
-        'end' => '17:00'
+        'end' => '17:00',
     ];
 
     protected $listeners = ['locationUpdated', 'performCheckIn', 'performCheckOut'];
@@ -92,9 +92,7 @@ class CheckIn extends Component
      */
     private function createOrLoadManagerSchedule()
     {
-        $this->todaySchedule = Schedule::where('user_id', Auth::id())
-            ->whereDate('date', Carbon::today())
-            ->first();
+        $this->todaySchedule = Schedule::where('user_id', Auth::id())->whereDate('date', Carbon::today())->first();
 
         if (!$this->todaySchedule) {
             $this->todaySchedule = Schedule::create([
@@ -104,7 +102,7 @@ class CheckIn extends Component
                 'end_time' => $this->managerWorkingHours['end'],
                 'is_checked' => false,
                 'notes' => 'Auto-generated manager schedule',
-                'created_by' => Auth::id()
+                'created_by' => Auth::id(),
             ]);
         }
 
@@ -281,56 +279,69 @@ class CheckIn extends Component
         }
     }
 
-    /**
-     * Handle schedule that crosses midnight
-     */
     private function handleCrossMidnightSchedule($now, $checkInWindow, $checkOutWindow, $scheduleStart, $scheduleEnd, $alreadyCheckedIn)
     {
-        // If current time is before midnight and after start time
-        if ($now->gte($checkInWindow) && $now->lt($scheduleStart)) {
-            $this->isWithinCheckInTime = true;
-        }
-        // If current time is after midnight but before end time
-        elseif ($now->lte($checkOutWindow)) {
-            $this->isWithinCheckInTime = true;
-            $this->isWithinCheckOutTime = true;
-        } else {
-            $this->isWithinCheckInTime = false;
-            $this->isWithinCheckOutTime = true;
-            $this->setScheduleStatusMessage($now, $checkInWindow, $scheduleStart, $scheduleEnd, $checkOutWindow, $alreadyCheckedIn);
-        }
-    }
+        // For cross midnight schedules, we need to check if we're in the first part (before midnight)
+        // or second part (after midnight) of the schedule
 
-    /**
-     * Handle normal schedule (not crossing midnight)
-     */
-    private function handleNormalSchedule($now, $checkInWindow, $checkOutWindow, $scheduleStart, $scheduleEnd, $alreadyCheckedIn)
-    {
-        if ($now->between($checkInWindow, $scheduleEnd)) {
+        // Case 1: Current time is in the evening part (before midnight)
+        // This covers from check-in window until 23:59:59
+        if ($now->gte($checkInWindow) && $now->hour >= $checkInWindow->hour) {
             $this->isWithinCheckInTime = true;
-        } elseif($now->gte($scheduleEnd) && $now->lte($checkOutWindow)) {
-            $this->isWithinCheckInTime = false;
-            $this->isWithinCheckOutTime = true;
-            $this->setScheduleStatusMessage($now, $checkInWindow, $scheduleStart, $scheduleEnd, $checkOutWindow, $alreadyCheckedIn);
-        } else {
+            if ($alreadyCheckedIn) {
+                $this->isWithinCheckOutTime = false; // Can't check out in the same day evening
+            }
+        }
+        // Case 2: Current time is in the morning part (after midnight)
+        // This covers from 00:00:00 until check-out window
+        elseif ($now->hour < 12 && $now->lte($checkOutWindow)) {
+            // Assuming morning shift ends before noon
+            $this->isWithinCheckInTime = !$alreadyCheckedIn; // Can still check in if haven't checked in yesterday
+            $this->isWithinCheckOutTime = $alreadyCheckedIn; // Can check out if already checked in
+        }
+        // Case 3: Outside schedule window
+        else {
             $this->isWithinCheckInTime = false;
             $this->isWithinCheckOutTime = false;
+            $this->setScheduleStatusMessage($now, $checkInWindow, $scheduleStart, $scheduleEnd, $checkOutWindow, $alreadyCheckedIn);
         }
     }
 
-    /**
-     * Set schedule status message based on current time
-     */
+    private function handleNormalSchedule($now, $checkInWindow, $checkOutWindow, $scheduleStart, $scheduleEnd, $alreadyCheckedIn)
+    {
+        // Check if within check-in window (30 minutes before start until schedule end)
+        if ($now->gte($checkInWindow) && $now->lte($scheduleEnd)) {
+            $this->isWithinCheckInTime = !$alreadyCheckedIn;
+        } else {
+            $this->isWithinCheckInTime = false;
+        }
+
+        // Check if within check-out window (from schedule start until 2 hours after end)
+        if ($now->gte($scheduleStart) && $now->lte($checkOutWindow)) {
+            $this->isWithinCheckOutTime = $alreadyCheckedIn;
+        } else {
+            $this->isWithinCheckOutTime = false;
+        }
+
+        // Set status message if outside schedule
+        if (!$this->isWithinCheckInTime && !$this->isWithinCheckOutTime) {
+            $this->setScheduleStatusMessage($now, $checkInWindow, $scheduleStart, $scheduleEnd, $checkOutWindow, $alreadyCheckedIn);
+        }
+    }
+
     private function setScheduleStatusMessage($now, $checkInWindow, $scheduleStart, $scheduleEnd, $checkOutWindow, $alreadyCheckedIn)
     {
         if (!$alreadyCheckedIn) {
             if ($now->lt($checkInWindow)) {
-                $this->scheduleStatus = 'Your schedule starts at ' . $scheduleStart->format('h:i A') . '. You can check in 30 minutes before.';
+                $this->scheduleStatus = 'Your schedule starts at ' . $scheduleStart->format('H:i') . '. You can check in 30 minutes before.';
             } else {
-                $this->scheduleStatus = 'Your schedule ended at ' . $scheduleEnd->format('h:i A') . '. You can no longer check in/out for today.';
+                // For cross midnight, show next day end time
+                $endTimeDisplay = $scheduleEnd->lt($scheduleStart) ? $scheduleEnd->copy()->addDay()->format('H:i (next day)') : $scheduleEnd->format('H:i');
+                $this->scheduleStatus = 'Your schedule ended at ' . $endTimeDisplay . '. You can no longer check in for this shift.';
             }
         } else {
-            $this->scheduleStatus = 'You can check out until ' . $checkOutWindow->format('h:i A') . '.';
+            $checkOutDisplay = $checkOutWindow->lt($scheduleStart) ? $checkOutWindow->copy()->addDay()->format('H:i (next day)') : $checkOutWindow->format('H:i');
+            $this->scheduleStatus = 'You can check out until ' . $checkOutDisplay . '.';
         }
     }
 
@@ -414,7 +425,7 @@ class CheckIn extends Component
         if ($this->isManager) {
             // Managers have more flexible check-in rules
             if ($this->todayAttendance && $this->todayAttendance->is_checked) {
-                $this->errorMessage = "You have already checked in today.";
+                $this->errorMessage = 'You have already checked in today.';
                 return false;
             }
             return true;
