@@ -3,7 +3,7 @@
     <div class="px-4 py-3 flex items-center justify-between">
         <div class="flex items-center">
             <x-application-logo class="w-8 h-8" />
-            <h1 class="ml-2 text-lg font-semibold text-[#101317]">HR Attendee</h1>
+            <h1 class="ml-2 text-lg font-semibold text-[#101317]">ESS SIMBIKA</h1>
         </div>
 
         <div x-data="{ open: false }" class="relative">

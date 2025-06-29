@@ -30,7 +30,7 @@ class LoginForm extends Component
         if (Auth::attempt(['name' => $this->username, 'password' => $this->password], $this->remember)) {
             session()->regenerate();
 
-            return redirect()->route(Auth::user()->isAdmin() ? 'admin.offices.index' : 'dashboard.check-in');
+            return redirect()->route(Auth::user()->isAdmin() ? 'admin.offices.index' : (Auth::user()->isManager() ? 'manager.schedules.index' : 'dashboard.check-in'));
         } else {
             $this->dispatch('toast', [
                 'message' => 'Username atau password salah',

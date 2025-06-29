@@ -7,7 +7,7 @@
                 <div class="mb-8">
                     <x-application-logo class="w-24 h-24 fill-current text-white" />
                 </div>
-                <h2 class="text-4xl font-bold text-white mb-6">HR Attendee</h2>
+                <h2 class="text-4xl font-bold text-white mb-6">ESS SIMBIKA</h2>
                 <p class="text-white text-xl mb-8 text-center">Manage attendance efficiently with our powerful dashboard</p>
 
                 <!-- Simple animated elements -->
@@ -45,7 +45,7 @@
                         Welcome Back <span class="inline-block animate-wave ml-2">👋</span>
                     </h1>
                     <h2 class="text-3xl font-bold mt-2">
-                        to <span class="text-[#3085FE]">HR Attendee</span>
+                        to <span class="text-[#3085FE]">ESS SIMBIKA</span>
                     </h2>
                     <p class="text-gray-500 text-lg mt-3">Hello there, login to continue</p>
                 </div>
@@ -56,9 +56,9 @@
                 </div>
 
                 <!-- Additional Info -->
-                <div class="mt-8 text-center text-gray-500">
+                {{-- <div class="mt-8 text-center text-gray-500">
                     <p>Need help? Contact <a href="#" class="text-[#3085FE] hover:underline">support@hrattendee.com</a></p>
-                </div>
+                </div> --}}
             </div>
         </div>
     </div>

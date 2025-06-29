@@ -24,6 +24,7 @@ class Schedule extends Model
         'date' => 'date',
         'start_time' => 'datetime',
         'end_time' => 'datetime',
+        'is_checked' => 'boolean',
     ];
 
     /**
@@ -58,13 +59,102 @@ class Schedule extends Model
     }
 
     /**
+     * Check if this is a working day (not holiday)
+     */
+    public function isWorkingDay()
+    {
+        return $this->shift_type !== 'holiday';
+    }
+
+    /**
+     * Check if this is a holiday
+     */
+    public function isHoliday()
+    {
+        return $this->shift_type === 'holiday';
+    }
+
+    /**
+     * Get the shift type label
+     */
+    public function getShiftTypeLabelAttribute()
+    {
+        $labels = [
+            'morning' => 'Morning Shift',
+            'afternoon' => 'Afternoon Shift',
+            'night' => 'Night Shift',
+            'holiday' => 'Holiday',
+        ];
+
+        return $labels[$this->shift_type] ?? 'Unknown';
+    }
+
+    /**
+     * Get the shift badge CSS classes
+     */
+    public function getShiftBadgeClassAttribute()
+    {
+        $classes = [
+            'morning' => 'bg-green-100 text-green-800',
+            'afternoon' => 'bg-yellow-100 text-yellow-800',
+            'night' => 'bg-blue-100 text-blue-800',
+            'holiday' => 'bg-gray-100 text-gray-800',
+        ];
+
+        return $classes[$this->shift_type] ?? 'bg-gray-100 text-gray-800';
+    }
+
+    /**
      * Calculate the duration of the schedule in hours.
      */
     public function getDurationAttribute()
     {
-        $start = $this->start_time;
-        $end = $this->end_time;
+        if (!$this->start_time || !$this->end_time) {
+            return 0;
+        }
 
-        return $start->diffInHours($end);
+        return $this->start_time->diffInHours($this->end_time);
+    }
+
+    /**
+     * Get formatted duration string
+     */
+    public function getFormattedDurationAttribute()
+    {
+        $duration = $this->duration;
+
+        if ($duration == 0) {
+            return '-';
+        }
+
+        return $duration . 'h';
+    }
+
+    /**
+     * Check if employee is late for check in
+     */
+    public function isLateCheckIn($checkInTime = null)
+    {
+        if (!$this->isWorkingDay() || !$this->start_time) {
+            return false;
+        }
+
+        $checkInTime = $checkInTime ?: now();
+
+        return $checkInTime->gt($this->start_time);
+    }
+
+    /**
+     * Check if employee checked out early
+     */
+    public function isEarlyCheckOut($checkOutTime = null)
+    {
+        if (!$this->isWorkingDay() || !$this->end_time) {
+            return false;
+        }
+
+        $checkOutTime = $checkOutTime ?: now();
+
+        return $checkOutTime->lt($this->end_time);
     }
 }

@@ -2,13 +2,13 @@
     <!-- Logo & App Name -->
     <div class="p-6 flex items-center">
         <x-application-logo class="w-10 h-10" />
-        <h1 class="ml-3 text-xl font-bold text-[#101317]">HR Attendee</h1>
+        <h1 class="ml-3 text-xl font-bold text-[#101317]">ESS SIMBIKA</h1>
     </div>
 
     <!-- Navigation Menu -->
     <nav class="flex-1 px-4 py-6 space-y-1">
         <!-- Employee Default Navigation -->
-        @if (!Auth::user()->isAdmin())
+        @if (Auth::user()->isEmployee())
             <a href="{{ route('dashboard.check-in') }}"
                 class="flex items-center px-4 py-3 rounded-lg {{ request()->routeIs('dashboard.check-in') ? 'bg-[#3085FE] text-white' : 'text-gray-700 hover:bg-gray-100' }}">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24"
@@ -45,6 +45,15 @@
 
         <!-- Manager Navigation Links -->
         @if (Auth::user()->isManager())
+            <a href="{{ route('manager.attendance.index') }}"
+                class="flex items-center px-4 py-3 rounded-lg {{ request()->routeIs('manager.attendance.*') ? 'bg-[#3085FE] text-white' : 'text-gray-700 hover:bg-gray-100' }}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Attendance List
+            </a>
             <a href="{{ route('manager.approvals.business-trips.index') }}"
                 class="flex items-center px-4 py-3 rounded-lg {{ request()->routeIs('manager.approvals.business-trips.*') ? 'bg-[#3085FE] text-white' : 'text-gray-700 hover:bg-gray-100' }}">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24"
@@ -78,7 +87,7 @@
 
         <!-- Employee Schedule Link -->
         @if (Auth::user()->isEmployee())
-        <a href="{{ route('employee.approvals.business-trips.index') }}"
+            <a href="{{ route('employee.approvals.business-trips.index') }}"
                 class="flex items-center px-4 py-3 rounded-lg {{ request()->routeIs('employee.approvals.business-trips.*') ? 'bg-[#3085FE] text-white' : 'text-gray-700 hover:bg-gray-100' }}">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24"
                     stroke="currentColor">
@@ -124,8 +133,8 @@
                     <div class="font-medium text-gray-900 truncate">{{ Auth::user()->name ?? 'User' }}</div>
                     <div class="text-xs text-gray-500 truncate">{{ ucfirst(Auth::user()->user_type) }}</div>
                 </div>
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0 text-gray-400" viewBox="0 0 20 20"
-                    fill="currentColor">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0 text-gray-400"
+                    viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd"
                         d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
                         clip-rule="evenodd" />

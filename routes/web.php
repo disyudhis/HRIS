@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ApprovalController;
+use App\Http\Controllers\AttendanceListController;
 use App\Http\Controllers\OfficeController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -88,6 +89,11 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         ->prefix('manager')
         ->name('manager.')
         ->group(function () {
+            Route::prefix('attendance')
+                ->name('attendance.')
+                ->group(function () {
+                    Route::get('/', [AttendanceListController::class, 'index'])->name('index');
+                });
             // Manager approval routes
             Route::prefix('approvals')
                 ->name('approvals.')
