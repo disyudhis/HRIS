@@ -174,7 +174,7 @@
                         <label class="block text-sm font-medium text-gray-700 mb-2">Jenis Kelamin</label>
                         <div class="flex space-x-5">
                             <div class="flex items-center">
-                                <input type="radio" wire:model.live="gender" id="gender_male" value="Laki-laki"
+                                <input type="radio" wire:model.live="gender" id="gender_male" value="laki-laki"
                                     class="h-4 w-4 text-[#3085FE] focus:ring-[#3085FE] border-gray-300">
                                 <label for="gender_male" class="ml-2 block text-sm text-gray-700">Laki-laki</label>
                             </div>
@@ -212,13 +212,13 @@
                         <select wire:model.live="religion" id="religion"
                             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#3085FE] focus:ring-[#3085FE]">
                             <option value="">Select Religion</option>
-                            <option value="Islam">Islam</option>
-                            <option value="Christianity">Christianity</option>
-                            <option value="Catholicism">Catholicism</option>
-                            <option value="Hinduism">Hinduism</option>
-                            <option value="Buddhism">Buddhism</option>
-                            <option value="Confucianism">Confucianism</option>
-                            <option value="Other">Other</option>
+                            <option value="ISLAM">Islam</option>
+                            <option value="PROTESTAN">Protestan</option>
+                            <option value="KATOLIK">Katolik</option>
+                            <option value="HINDU">Hindu</option>
+                            <option value="BUDDHA">Buddha</option>
+                            <option value="KONGHUCU">Konghucu</option>
+                            <option value="LAINNYA">Other</option>
                         </select>
                         @error('religion')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>

@@ -16,8 +16,18 @@ class AdminMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (!Auth::check() || !Auth::user()->isAdmin()) {
-            return redirect()->back()->with('error', 'You do not have permission to access this page.');
+        if (!Auth::check()) {
+            return redirect()->route('login');
+        }
+
+        if (!Auth::user()->isAdmin()) {
+            // Redirect to appropriate dashboard based on user role
+            $user = Auth::user();
+            if ($user->isManager()) {
+                return redirect()->route('manager.dashboard')->with('error', 'You do not have admin access.');
+            } else {
+                return redirect()->route('employee.dashboard')->with('error', 'You do not have admin access.');
+            }
         }
 
         return $next($request);

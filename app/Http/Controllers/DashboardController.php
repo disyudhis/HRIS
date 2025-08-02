@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
 {
@@ -11,7 +12,15 @@ class DashboardController extends Controller
      */
     public function index()
     {
-        //
+        $user = Auth::user();
+
+        if ($user->isAdmin()) {
+            return redirect()->route('admin.offices.index');
+        } elseif ($user->isManager()) {
+            return redirect()->route('manager.attendance.index');
+        } else {
+            return redirect()->route('employee.dashboard');
+        }
     }
 
     public function checkIn()
@@ -19,7 +28,8 @@ class DashboardController extends Controller
         return view('dashboard.check-in');
     }
 
-    public function schedules(){
+    public function schedules()
+    {
         return view('employee.schedules.index');
     }
 

@@ -207,7 +207,7 @@ class UserForm extends Component
 
                 // Personal information
                 $this->gender = $userDetail->gender;
-                $this->birthday = $userDetail->birthday;
+                $this->birthday = $userDetail->birthday ? $userDetail->birthday->format('Y-m-d') : null;
                 $this->birth_place = $userDetail->birth_place;
                 $this->religion = $userDetail->religion;
                 $this->blood_type = $userDetail->blood_type;

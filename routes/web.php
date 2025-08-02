@@ -4,6 +4,7 @@ use App\Http\Controllers\ApprovalController;
 use App\Http\Controllers\AttendanceListController;
 use App\Http\Controllers\OfficeController;
 use App\Http\Controllers\UserController;
+use App\Http\Middleware\EmployeeMiddleware;
 use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\ManagerMiddleware;
@@ -13,17 +14,30 @@ use App\Http\Controllers\employee\SppdController;
 use App\Http\Controllers\employee\OvertimeController;
 use App\Http\Controllers\Manager\Schedule\ScheduleController;
 
-// Redirect to login page
+// Redirect to login page for unauthenticated users
 Route::redirect('/', '/login');
 
 // Authenticated routes
 Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified'])->group(function () {
-    // Dashboard
-    Route::redirect('/', '/check-in')->name('dashboard');
+    // Role-based dashboard redirection
+    Route::get('/dashboard', function () {
+        $user = auth()->user();
+
+        if ($user->isAdmin()) {
+            return redirect()->route('admin.offices.index');
+        } elseif ($user->isManager()) {
+            return redirect()->route('manager.attendance.index');
+        } else {
+            return redirect()->route('employee.dashboard');
+        }
+    })->name('dashboard');
+
+    // Employee dashboard and routes (default for authenticated users)
+    Route::get('/employee', [DashboardController::class, 'checkIn'])->name('employee.dashboard');
     Route::get('/check-in', [DashboardController::class, 'checkIn'])->name('dashboard.check-in');
     Route::get('/schedules', [DashboardController::class, 'schedules'])->name('employee.schedules.index');
 
-    // Profile routes
+    // Profile routes (accessible by all authenticated users)
     Route::controller(ProfileController::class)
         ->prefix('profile')
         ->name('profile.')
@@ -89,11 +103,13 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         ->prefix('manager')
         ->name('manager.')
         ->group(function () {
+            // Attendance management
             Route::prefix('attendance')
                 ->name('attendance.')
                 ->group(function () {
                     Route::get('/', [AttendanceListController::class, 'index'])->name('index');
                 });
+
             // Manager approval routes
             Route::prefix('approvals')
                 ->name('approvals.')
