@@ -18,7 +18,7 @@
     <!-- Filters Card -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
         <div class="p-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
                 <!-- Date Navigation -->
                 <div class="space-y-2">
                     <label class="block text-sm font-medium text-gray-700">Date</label>
@@ -70,6 +70,18 @@
                         class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         <option value="">All Shifts</option>
                         @foreach ($shiftTypes as $key => $label)
+                            <option value="{{ $key }}">{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <!-- Attendance Condition Filter -->
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-gray-700">Filter by Condition</label>
+                    <select wire:model.live="selectedCondition"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="">All Conditions</option>
+                        @foreach ($conditionTypes as $key => $label)
                             <option value="{{ $key }}">{{ $label }}</option>
                         @endforeach
                     </select>
@@ -189,7 +201,9 @@
                                         {{-- Check In Status --}}
                                         @if ($user->checkIn)
                                             @php
-                                                $isLate = $user->schedule->isLateCheckIn($user->checkIn->created_at);
+                                                $isLate = $user->schedule->isLateCheckIn(
+                                                    Carbon\Carbon::parse($user->checkIn->checked_time)->format('H:i'),
+                                                );
                                                 $checkInClass = $isLate
                                                     ? 'bg-yellow-100 text-yellow-800'
                                                     : 'bg-green-100 text-green-800';
@@ -203,7 +217,8 @@
                                                         d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1">
                                                     </path>
                                                 </svg>
-                                                In: {{ $user->checkIn->created_at->format('H:i') }}
+                                                In:
+                                                {{ \Carbon\Carbon::parse($user->checkIn->checked_time)->format('H:i') }}
                                                 @if ($isLate)
                                                     <span class="ml-1 text-xs">(Late)</span>
                                                 @endif
@@ -224,7 +239,7 @@
                                         @if ($user->checkOut)
                                             @php
                                                 $isEarly = $user->schedule->isEarlyCheckOut(
-                                                    $user->checkOut->created_at,
+                                                    \Carbon\Carbon::parse($user->checkOut->checked_time)->format('H:i'),
                                                 );
                                                 $checkOutClass = $isEarly
                                                     ? 'bg-yellow-100 text-yellow-800'
@@ -239,7 +254,8 @@
                                                         d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1">
                                                     </path>
                                                 </svg>
-                                                Out: {{ $user->checkOut->created_at->format('H:i') }}
+                                                Out:
+                                                {{ \Carbon\Carbon::parse($user->checkOut->checked_time)->format('H:i') }}
                                                 @if ($isEarly)
                                                     <span class="ml-1 text-xs">(Early)</span>
                                                 @endif

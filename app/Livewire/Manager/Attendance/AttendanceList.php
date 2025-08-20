@@ -18,12 +18,21 @@ class AttendanceList extends Component
     public $selectedDate;
     public $selectedUser = '';
     public $selectedShift = '';
+    public $selectedCondition = '';
 
     public $shiftTypes = [
         'morning' => 'Morning Shift',
         'afternoon' => 'Afternoon Shift',
         'night' => 'Night Shift',
         'holiday' => 'Holiday',
+    ];
+
+    public $conditionTypes = [
+        'checked_in' => 'Checked In',
+        'checked_out' => 'Checked Out',
+        'not_checked_in' => 'Not Checked In',
+        'still_working' => 'Still Working',
+        'complete' => 'Complete (Both Check In & Out)',
     ];
 
     public function mount()
@@ -42,6 +51,11 @@ class AttendanceList extends Component
     }
 
     public function updatedSelectedShift()
+    {
+        $this->resetPage();
+    }
+
+    public function updatedSelectedCondition()
     {
         $this->resetPage();
     }
@@ -87,12 +101,15 @@ class AttendanceList extends Component
 
         $query = User::query()
             ->where('user_type', User::ROLE_EMPLOYEE)
-            ->where('manager_id', $currentManager->id) // Filter hanya bawahan manager yang login
+            ->where('manager_id', $currentManager->id)
             ->with([
                 'schedules' => function ($query) {
-                    $query->where('date', $this->selectedDate)
-                          ->with(['attendances']);
-                }
+                    $query->where('date', $this->selectedDate)->with([
+                        'attendances' => function ($q) {
+                            $q->where('is_checked', true);
+                        },
+                    ]);
+                },
             ]);
 
         // Filter by specific user if selected
@@ -123,13 +140,9 @@ class AttendanceList extends Component
 
             // Get attendance data if schedule exists in database
             if ($schedule->exists) {
-                $user->checkIn = $schedule->attendances
-                    ->where('type', Attendance::TYPE_CHECK_IN)
-                    ->first();
+                $user->checkIn = $schedule->attendances->where('type', Attendance::TYPE_CHECK_IN)->where('is_checked', true)->first();
 
-                $user->checkOut = $schedule->attendances
-                    ->where('type', Attendance::TYPE_CHECK_OUT)
-                    ->first();
+                $user->checkOut = $schedule->attendances->where('type', Attendance::TYPE_CHECK_OUT)->where('is_checked', true)->first();
             } else {
                 $user->checkIn = null;
                 $user->checkOut = null;
@@ -147,6 +160,33 @@ class AttendanceList extends Component
             $users->setCollection($filteredCollection);
         }
 
+        // Filter by attendance condition
+        if ($this->selectedCondition) {
+            $filteredCollection = $users->getCollection()->filter(function ($user) {
+                switch ($this->selectedCondition) {
+                    case 'checked_in':
+                        return $user->checkIn !== null;
+
+                    case 'checked_out':
+                        return $user->checkOut !== null;
+
+                    case 'not_checked_in':
+                        return $user->checkIn === null && !$user->schedule->isHoliday();
+
+                    case 'still_working':
+                        return $user->checkIn !== null && $user->checkOut === null && !$user->schedule->isHoliday();
+
+                    case 'complete':
+                        return $user->checkIn !== null && $user->checkOut !== null;
+
+                    default:
+                        return true;
+                }
+            });
+
+            $users->setCollection($filteredCollection);
+        }
+
         return $users;
     }
 
@@ -157,10 +197,7 @@ class AttendanceList extends Component
     {
         $currentManager = $this->getCurrentManager();
 
-        return User::where('user_type', User::ROLE_EMPLOYEE)
-            ->where('manager_id', $currentManager->id) // Filter hanya bawahan manager yang login
-            ->orderBy('name')
-            ->get();
+        return User::where('user_type', User::ROLE_EMPLOYEE)->where('manager_id', $currentManager->id)->orderBy('name')->get();
     }
 
     /**
@@ -170,9 +207,7 @@ class AttendanceList extends Component
     {
         $currentManager = $this->getCurrentManager();
 
-        return User::where('user_type', User::ROLE_EMPLOYEE)
-            ->where('manager_id', $currentManager->id)
-            ->count();
+        return User::where('user_type', User::ROLE_EMPLOYEE)->where('manager_id', $currentManager->id)->count();
     }
 
     /**
@@ -183,10 +218,6 @@ class AttendanceList extends Component
         return $this->totalEmployees > 0;
     }
 
-    /**
-     * Authorization check
-     */
-
     public function render()
     {
         // Jika manager tidak memiliki bawahan, tampilkan pesan khusus
@@ -194,6 +225,7 @@ class AttendanceList extends Component
             return view('livewire.manager.attendance.attendance-list', [
                 'message' => 'Anda belum memiliki pegawai yang ditugaskan sebagai bawahan.',
                 'shiftTypes' => $this->shiftTypes,
+                'conditionTypes' => $this->conditionTypes,
             ]);
         }
 
@@ -201,6 +233,7 @@ class AttendanceList extends Component
             'usersWithSchedules' => $this->usersWithSchedules,
             'users' => $this->users,
             'shiftTypes' => $this->shiftTypes,
+            'conditionTypes' => $this->conditionTypes,
             'totalEmployees' => $this->totalEmployees,
         ]);
     }

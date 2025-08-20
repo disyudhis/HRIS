@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
@@ -140,8 +141,7 @@ class Schedule extends Model
         }
 
         $checkInTime = $checkInTime ?: now();
-
-        return $checkInTime->gt($this->start_time);
+        return Carbon::parse($checkInTime)->gt($this->start_time);
     }
 
     /**
@@ -155,6 +155,6 @@ class Schedule extends Model
 
         $checkOutTime = $checkOutTime ?: now();
 
-        return $checkOutTime->lt($this->end_time);
+        return Carbon::parse($checkOutTime)->lt($this->end_time);
     }
 }
