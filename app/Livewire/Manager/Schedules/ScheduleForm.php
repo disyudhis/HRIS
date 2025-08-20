@@ -224,7 +224,8 @@ class ScheduleForm extends Component
                 'start_time' => $this->startTime,
                 'end_time' => $this->endTime,
                 'shift_type' => $this->shiftType,
-                'notes' => $this->notes,
+                'is_checked' => false,
+                'notes' => 'ABSENT',
                 'created_by' => Auth::id(),
             ]);
 
@@ -270,7 +271,8 @@ class ScheduleForm extends Component
                     'start_time' => $this->startTime,
                     'end_time' => $this->endTime,
                     'shift_type' => $this->shiftType,
-                    'notes' => $this->notes,
+                    'is_checked' => false,
+                    'notes' => 'ABSENT',
                     'created_by' => Auth::id(),
                 ]);
 

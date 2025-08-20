@@ -29,9 +29,9 @@ class AttendanceList extends Component
 
     public $conditionTypes = [
         'checked_in' => 'Checked In',
-        'checked_out' => 'Checked Out',
         'not_checked_in' => 'Not Checked In',
-        'still_working' => 'Still Working',
+        'absent' => 'Absent',
+        'late' => 'Late',
         'complete' => 'Complete (Both Check In & Out)',
     ];
 
@@ -167,14 +167,14 @@ class AttendanceList extends Component
                     case 'checked_in':
                         return $user->checkIn !== null;
 
-                    case 'checked_out':
-                        return $user->checkOut !== null;
-
                     case 'not_checked_in':
                         return $user->checkIn === null && !$user->schedule->isHoliday();
 
-                    case 'still_working':
-                        return $user->checkIn !== null && $user->checkOut === null && !$user->schedule->isHoliday();
+                    case 'absent':
+                        return $user->checkIn === null || !$user->checkIn->is_checked;
+
+                    case 'late':
+                        return $user->checkIn !== null && $user->checkIn->status === Attendance::STATUS_LATE;
 
                     case 'complete':
                         return $user->checkIn !== null && $user->checkOut !== null;

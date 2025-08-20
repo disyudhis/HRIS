@@ -1,11 +1,12 @@
 <div>
-    <!-- Tambahkan pesan error jika tidak ada office yang ditemukan -->
+    <!-- Error message if office not configured -->
     @if (!$officeLatitude || !$officeLongitude)
         <div class="bg-red-100 border border-red-200 text-red-800 px-4 py-3 rounded-xl mb-4">
             {{ $errorMessage ?? 'Office location not configured. Please contact your administrator.' }}
         </div>
     @else
         <div class="w-full space-y-6" x-data="checkInMap()" x-init="initMap({{ $officeLatitude }}, {{ $officeLongitude }}, {{ $allowedRadius }})">
+
             <!-- Office Info -->
             <div class="bg-white rounded-xl border border-[#DADADA] p-4 mb-4">
                 <h2 class="text-lg font-medium text-[#101317]">{{ $officeName }}</h2>
@@ -15,7 +16,13 @@
             <!-- Today's Schedule -->
             @if ($todaySchedule)
                 <div class="bg-white rounded-xl border border-[#DADADA] p-4 mb-4">
-                    <h2 class="text-lg font-medium text-[#101317]">Today's Schedule</h2>
+                    <h2 class="text-lg font-medium text-[#101317]">
+                        @if ($incompleteAttendance)
+                            Incomplete Schedule ({{ $todaySchedule->date->format('d M Y') }})
+                        @else
+                            Today's Schedule
+                        @endif
+                    </h2>
                     <div class="flex justify-between items-center mt-2">
                         <div class="flex items-center">
                             <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center mr-3">
@@ -29,24 +36,17 @@
                                 <p class="text-[#101317] font-medium">
                                     {{ Carbon\Carbon::parse($todaySchedule->start_time)->format('h:i A') }} -
                                     {{ Carbon\Carbon::parse($todaySchedule->end_time)->format('h:i A') }}</p>
-                                <p class="text-[#ACAFB5] text-sm">{{ $todaySchedule->location }}</p>
+                                <p class="text-[#ACAFB5] text-sm">{{ $todaySchedule->shift_type_label }}</p>
                             </div>
                         </div>
-                        <div
-                            class="px-3 py-1 rounded-lg text-xs font-medium
-          {{ $todaySchedule->shift_type === 'morning'
-              ? 'bg-green-100 text-green-800'
-              : ($todaySchedule->shift_type === 'afternoon'
-                  ? 'bg-yellow-100 text-yellow-800'
-                  : ($todaySchedule->shift_type === 'night'
-                      ? 'bg-indigo-100 text-indigo-800'
-                      : 'bg-gray-100 text-gray-800')) }}">
+                        <div class="px-3 py-1 rounded-lg text-xs font-medium {{ $todaySchedule->shift_badge_class }}">
                             {{ ucfirst($todaySchedule->shift_type) }} Shift
                         </div>
                     </div>
-                    @if ($isWithinCheckInTime == false && $isWithinCheckOutTime == true)
-                        <div class="mt-3 text-sm text-yellow-600">
-                            {{ $scheduleStatus }}
+
+                    @if ($scheduleStatus)
+                        <div class="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                            <p class="text-sm text-yellow-800">{{ $scheduleStatus }}</p>
                         </div>
                     @endif
                 </div>
@@ -72,53 +72,70 @@
             @endif
 
             <!-- Attendance Status -->
-            @if ($todayAttendance)
+            @if ($todayCheckIn || $incompleteAttendance)
                 <div class="bg-white rounded-xl border border-[#DADADA] p-4 mb-4">
-                    <h2 class="text-lg font-medium text-[#101317]">Today's Attendance</h2>
+                    <h2 class="text-lg font-medium text-[#101317]">Attendance Status</h2>
                     <div class="mt-2 space-y-3">
-                        <div class="flex justify-between items-center">
-                            <div class="flex items-center">
-                                <div class="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center mr-3">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-600"
-                                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M5 13l4 4L19 7" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <p class="text-[#101317] font-medium">Check In</p>
-                                    <p class="text-[#ACAFB5] text-sm">
-                                        {{ $todayAttendance->checked_time ? Carbon\Carbon::parse($todayAttendance->checked_time)->format('H:i') : '-' }}
-                                    </p>
-                                </div>
-                            </div>
-                            <div
-                                class="px-3 py-1 rounded-lg text-xs font-medium
-              {{ $todayAttendance->status_color }}">
-                                {{ ucfirst($todayAttendance->status) }}
-                            </div>
-                        </div>
 
-                        @if ($checkOutRecord)
+                        <!-- Check In Status -->
+                        @php
+                            $checkInRecord = $incompleteAttendance ?: $todayCheckIn;
+                        @endphp
+
+                        @if ($checkInRecord)
+                            <div class="flex justify-between items-center">
+                                <div class="flex items-center">
+                                    <div
+                                        class="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center mr-3">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-600"
+                                            fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p class="text-[#101317] font-medium">Check In</p>
+                                        <p class="text-[#ACAFB5] text-sm">
+                                            @if ($checkInRecord->is_checked && $checkInRecord->checked_time)
+                                                {{ Carbon\Carbon::parse($checkInRecord->checked_time)->format('h:i A') }}
+                                            @else
+                                                Not checked in yet
+                                            @endif
+                                        </p>
+                                    </div>
+                                </div>
+                                <div
+                                    class="px-3 py-1 rounded-lg text-xs font-medium {{ $checkInRecord->status_color }}">
+                                    {{ $checkInRecord->is_checked ? ucfirst($checkInRecord->status) : 'Pending' }}
+                                </div>
+                            </div>
+                        @endif
+
+                        <!-- Check Out Status -->
+                        @if ($todayCheckOut)
                             <div class="flex justify-between items-center">
                                 <div class="flex items-center">
                                     <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center mr-3">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600"
                                             fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013 3v1" />
                                         </svg>
                                     </div>
                                     <div>
                                         <p class="text-[#101317] font-medium">Check Out</p>
                                         <p class="text-[#ACAFB5] text-sm">
-                                            {{ $checkOutRecord->checked_time ? Carbon\Carbon::parse($checkOutRecord->checked_time)->format('h:i A') : '-' }}
+                                            @if ($todayCheckOut->is_checked && $todayCheckOut->checked_time)
+                                                {{ Carbon\Carbon::parse($todayCheckOut->checked_time)->format('h:i A') }}
+                                            @else
+                                                Not checked out yet
+                                            @endif
                                         </p>
                                     </div>
                                 </div>
-                                <div class="px-3 py-1 rounded-lg text-xs font-medium {{ $checkOutRecord->status_color }}">
-                                    {{-- {{ dd($checkOutRecord) }} --}}
-                                    {{ ucfirst($checkOutRecord->status) }}
+                                <div
+                                    class="px-3 py-1 rounded-lg text-xs font-medium {{ $todayCheckOut->status_color }}">
+                                    {{ $todayCheckOut->is_checked ? ucfirst($todayCheckOut->status) : 'Pending' }}
                                 </div>
                             </div>
                         @endif
@@ -198,43 +215,58 @@
                 </div>
             @endif
 
-
-            @if ($todayAttendance)
-                @if ($todayAttendance->is_checked == false)
-                    <!-- Belum check-in sama sekali -->
+            <!-- Check-in/Check-out Buttons -->
+            @if ($todaySchedule)
+                @if ($incompleteAttendance)
+                    <!-- Force checkout for incomplete attendance -->
+                    <button x-on:click="checkOut" x-bind:disabled="!isInRange"
+                        class="w-full h-[60px] text-white rounded-xl text-xl font-medium transition-colors"
+                        :class="{
+                            'bg-[#F97316] hover:bg-[#ea6c10]': isInRange,
+                            'bg-[#ACAFB5] cursor-not-allowed': !isInRange
+                        }">
+                        <span>Complete Previous Check Out</span>
+                    </button>
+                @elseif(!$todayCheckIn || !$todayCheckIn->is_checked)
+                    <!-- Check In Button -->
                     <button x-on:click="checkIn"
-                        x-bind:disabled="!isInRange || {{ $todaySchedule && !$isWithinCheckInTime ? 'true' : 'false' }}"
+                        x-bind:disabled="!isInRange || !{{ $isWithinCheckInTime ? 'true' : 'false' }}"
                         class="w-full h-[60px] text-white rounded-xl text-xl font-medium transition-colors"
                         :class="{
                             'bg-[#3085FE] hover:bg-[#2a75e6]': isInRange &&
-                                {{ $todaySchedule && $isWithinCheckInTime ? 'true' : 'false' }},
-                            'bg-[#ACAFB5] cursor-not-allowed': !isInRange ||
-                                {{ $todaySchedule && !$isWithinCheckInTime ? 'true' : 'false' }}
+                                {{ $isWithinCheckInTime ? 'true' : 'false' }},
+                            'bg-[#ACAFB5] cursor-not-allowed': !isInRange || !
+                                {{ $isWithinCheckInTime ? 'true' : 'false' }}
                         }">
                         <span>Check In Now</span>
                     </button>
-                @elseif($todayAttendance->is_checked == true || $checkOutRecord->is_checked == false)
-                    <!-- Sudah check-in tapi belum check-out -->
+                @elseif($todayCheckIn->is_checked && (!$todayCheckOut || !$todayCheckOut->is_checked))
+                    <!-- Check Out Button -->
                     <button x-on:click="checkOut"
-                        x-bind:disabled="!isInRange || {{ $todaySchedule && !$isWithinCheckOutTime ? 'true' : 'false' }}"
+                        x-bind:disabled="!isInRange || !{{ $isWithinCheckOutTime ? 'true' : 'false' }}"
                         class="w-full h-[60px] text-white rounded-xl text-xl font-medium transition-colors"
                         :class="{
                             'bg-[#F97316] hover:bg-[#ea6c10]': isInRange &&
-                                {{ $todaySchedule && $isWithinCheckOutTime ? 'true' : 'false' }},
-                            'bg-[#ACAFB5] cursor-not-allowed': !isInRange ||
-                                {{ $todaySchedule && !$isWithinCheckOutTime ? 'true' : 'false' }}
+                                {{ $isWithinCheckOutTime ? 'true' : 'false' }},
+                            'bg-[#ACAFB5] cursor-not-allowed': !isInRange || !
+                                {{ $isWithinCheckOutTime ? 'true' : 'false' }}
                         }">
                         <span>Check Out Now</span>
                     </button>
                 @else
-                    <!-- Sudah check-in dan check-out (completed) -->
-                    <button
-                        class="w-full disabled h-[60px] bg-green-500 text-white rounded-xl text-xl font-medium cursor-not-allowed">
-                        <span>Attendance Completed</span>
+                    <!-- Attendance Completed -->
+                    <button disabled
+                        class="w-full h-[60px] bg-green-500 text-white rounded-xl text-xl font-medium cursor-not-allowed">
+                        <span>Attendance Completed for Today</span>
                     </button>
                 @endif
+            @else
+                <!-- No Schedule Available -->
+                <button disabled
+                    class="w-full h-[60px] bg-gray-400 text-white rounded-xl text-xl font-medium cursor-not-allowed">
+                    <span>No Schedule Available</span>
+                </button>
             @endif
-            <!-- Check-in/Check-out Buttons -->
 
             <p class="text-center text-[#ACAFB5] text-sm">
                 You must be within {{ $allowedRadius }} meters of the office location to check in/out
@@ -308,7 +340,7 @@
                             radius: this.allowedRadius
                         }).addTo(this.map);
 
-                        // Get user location using the shared location service
+                        // Get user location
                         this.getUserLocation();
 
                         // Mark as initialized
@@ -325,21 +357,36 @@
                     getUserLocation() {
                         this.isLocating = true;
 
-                        // Use the shared location service
-                        window.LocationService.getUserLocation(
-                            // Success callback
-                            (position) => this.handlePositionSuccess(position),
-                            // Error callback
-                            (error) => this.handlePositionError(error),
-                            // Options
-                            {
-                                enableHighAccuracy: true,
-                                maximumAge: 10000,
-                                timeout: 10000
+                        // Use the shared location service if available
+                        if (window.LocationService) {
+                            window.LocationService.getUserLocation(
+                                (position) => this.handlePositionSuccess(position),
+                                (error) => this.handlePositionError(error), {
+                                    enableHighAccuracy: true,
+                                    maximumAge: 10000,
+                                    timeout: 10000
+                                }
+                            );
+                        } else {
+                            // Fallback to direct geolocation API
+                            if (navigator.geolocation) {
+                                navigator.geolocation.getCurrentPosition(
+                                    (position) => this.handlePositionSuccess(position),
+                                    (error) => this.handlePositionError(error), {
+                                        enableHighAccuracy: true,
+                                        maximumAge: 10000,
+                                        timeout: 10000
+                                    }
+                                );
+                            } else {
+                                this.handlePositionError({
+                                    code: 0,
+                                    message: 'Geolocation is not supported by this browser.'
+                                });
                             }
-                        );
+                        }
 
-                        // Also set up a watch position for real-time updates
+                        // Set up watch position for real-time updates
                         if (navigator.geolocation) {
                             this.watchId = navigator.geolocation.watchPosition(
                                 (position) => this.handlePositionSuccess(position),
@@ -371,11 +418,11 @@
                             // Create a custom icon for user location
                             const userIcon = L.divIcon({
                                 html: `
-                      <div class="relative">
-                          <div class="absolute inset-0 bg-blue-500 opacity-25 rounded-full animate-ping"></div>
-                          <div class="relative bg-blue-500 w-4 h-4 rounded-full border-2 border-white"></div>
-                      </div>
-                  `,
+                                    <div class="relative">
+                                        <div class="absolute inset-0 bg-blue-500 opacity-25 rounded-full animate-ping"></div>
+                                        <div class="relative bg-blue-500 w-4 h-4 rounded-full border-2 border-white"></div>
+                                    </div>
+                                `,
                                 className: 'user-location-marker',
                                 iconSize: [20, 20],
                                 iconAnchor: [10, 10]
@@ -384,7 +431,7 @@
                             this.userMarker = L.marker([latitude, longitude], {
                                 icon: userIcon
                             }).addTo(this.map);
-                            this.userMarker.bindPopup("Your Location").openPopup();
+                            this.userMarker.bindPopup("Your Location");
 
                             // Fit bounds to show both markers
                             const bounds = L.latLngBounds([
@@ -409,8 +456,8 @@
                             }).addTo(this.map);
                         }
 
-                        // Calculate distance to office using the shared service
-                        this.distance = window.LocationService.calculateDistance(
+                        // Calculate distance using Haversine formula
+                        this.distance = this.calculateDistance(
                             latitude,
                             longitude,
                             this.officeLocation.latitude,
@@ -419,13 +466,8 @@
 
                         this.isInRange = this.distance <= this.allowedRadius;
 
-                        // Update Livewire component with location data
-                        @this.call('locationUpdated',
-                            this.userLocation.latitude,
-                            this.userLocation.longitude,
-                            this.distance,
-                            this.isInRange
-                        );
+                        // Update Livewire component
+                        @this.call('locationUpdated', latitude, longitude, this.distance, this.isInRange);
 
                         this.isLocating = false;
                     },
@@ -436,18 +478,33 @@
 
                         let errorMessage = "Failed to get your location.";
                         switch (error.code) {
-                            case error.PERMISSION_DENIED:
+                            case 1: // PERMISSION_DENIED
                                 errorMessage = "Location access denied. Please enable location services.";
                                 break;
-                            case error.POSITION_UNAVAILABLE:
+                            case 2: // POSITION_UNAVAILABLE
                                 errorMessage = "Location information is unavailable.";
                                 break;
-                            case error.TIMEOUT:
+                            case 3: // TIMEOUT
                                 errorMessage = "Location request timed out.";
                                 break;
                         }
 
                         alert(errorMessage);
+                    },
+
+                    calculateDistance(lat1, lon1, lat2, lon2) {
+                        const R = 6371e3; // Earth's radius in meters
+                        const φ1 = lat1 * Math.PI / 180;
+                        const φ2 = lat2 * Math.PI / 180;
+                        const Δφ = (lat2 - lat1) * Math.PI / 180;
+                        const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+                        const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+                            Math.cos(φ1) * Math.cos(φ2) *
+                            Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+                        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+                        return R * c;
                     },
 
                     checkIn() {
@@ -463,7 +520,7 @@
                     },
 
                     // Clean up on component destroy
-                    disconnected() {
+                    disconnect() {
                         if (this.watchId !== null) {
                             navigator.geolocation.clearWatch(this.watchId);
                         }
@@ -477,5 +534,4 @@
             }
         </script>
     @endpush
-
 </div>
