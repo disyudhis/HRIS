@@ -36,6 +36,7 @@ class ScheduleList extends Component
 
         $this->schedules = Schedule::where('user_id', Auth::id())
             ->whereBetween('date', [$startDate, $endDate])
+            ->with(['checkIn', 'checkOut']) // Eager load attendance relationships
             ->orderBy('date')
             ->orderBy('start_time')
             ->get()
@@ -58,11 +59,30 @@ class ScheduleList extends Component
             $currentDate = $startDate->copy();
 
             while ($currentDate <= $endDate) {
+                $dateKey = $currentDate->format('Y-m-d');
+                $hasSchedule = isset($this->schedules[$dateKey]);
+
+                // Get attendance status for the date
+                $attendanceStatus = null;
+                $attendanceStatusLabel = null;
+                $attendanceStatusBadgeClass = null;
+
+                if ($hasSchedule) {
+                    // Get the first schedule for the date to determine overall status
+                    $schedule = collect($this->schedules[$dateKey])->first();
+                    $attendanceStatus = $schedule->attendance_status;
+                    $attendanceStatusLabel = $schedule->attendance_status_label;
+                    $attendanceStatusBadgeClass = $schedule->attendance_status_badge_class;
+                }
+
                 $this->allDates[] = [
-                    'date' => $currentDate->format('Y-m-d'),
+                    'date' => $dateKey,
                     'display_date' => $currentDate->format('F d, Y'),
                     'is_today' => $currentDate->isToday(),
-                    'has_schedule' => isset($this->schedules[$currentDate->format('Y-m-d')]),
+                    'has_schedule' => $hasSchedule,
+                    'attendance_status' => $attendanceStatus,
+                    'attendance_status_label' => $attendanceStatusLabel,
+                    'attendance_status_badge_class' => $attendanceStatusBadgeClass,
                 ];
                 $currentDate->addDay();
             }
@@ -97,6 +117,68 @@ class ScheduleList extends Component
         $this->displayLimit = 15;
     }
 
+    /**
+     * Get schedule status for a specific date
+     * This method can be called from the view to get proper status
+     */
+    public function getScheduleStatus($dateKey)
+    {
+        if (!isset($this->schedules[$dateKey])) {
+            return [
+                'status' => null,
+                'label' => 'No Schedule',
+                'badge_class' => 'bg-gray-100 text-gray-600'
+            ];
+        }
+
+        $schedules = $this->schedules[$dateKey];
+        $overallStatus = 'scheduled';
+
+        // Check each schedule for the date
+        foreach ($schedules as $schedule) {
+            $scheduleStatus = $schedule->attendance_status;
+
+            // Priority: absent > late > early_out > present > scheduled
+            if ($scheduleStatus === 'absent') {
+                $overallStatus = 'absent';
+                break;
+            } elseif (in_array($scheduleStatus, ['late', 'late_early_out', 'late_no_checkout']) && $overallStatus !== 'absent') {
+                $overallStatus = 'late';
+            } elseif (in_array($scheduleStatus, ['early_out', 'no_checkout']) && !in_array($overallStatus, ['absent', 'late'])) {
+                $overallStatus = 'early_out';
+            } elseif ($scheduleStatus === 'present' && !in_array($overallStatus, ['absent', 'late', 'early_out'])) {
+                $overallStatus = 'present';
+            }
+        }
+
+        // Get the first schedule to get the badge class
+        $firstSchedule = collect($schedules)->first();
+
+        $labels = [
+            'scheduled' => 'Scheduled',
+            'present' => 'Present',
+            'absent' => 'Absent',
+            'late' => 'Late',
+            'early_out' => 'Issues',
+            'holiday' => 'Holiday',
+        ];
+
+        $badgeClasses = [
+            'scheduled' => 'bg-blue-100 text-blue-800',
+            'present' => 'bg-green-100 text-green-800',
+            'absent' => 'bg-red-100 text-red-800',
+            'late' => 'bg-yellow-100 text-yellow-800',
+            'early_out' => 'bg-orange-100 text-orange-800',
+            'holiday' => 'bg-gray-100 text-gray-800',
+        ];
+
+        return [
+            'status' => $overallStatus,
+            'label' => $labels[$overallStatus] ?? 'Unknown',
+            'badge_class' => $badgeClasses[$overallStatus] ?? 'bg-gray-100 text-gray-600'
+        ];
+    }
+
     public function loadMoreDays()
     {
         $this->displayLimit += 15;
@@ -112,11 +194,15 @@ class ScheduleList extends Component
 
             for ($i = 0; $i < 7; $i++) {
                 $currentDate = $weekStart->copy()->addDays($i);
+                $dateKey = $currentDate->format('Y-m-d');
+                $scheduleStatus = $this->getScheduleStatus($dateKey);
+
                 $dates[] = [
-                    'date' => $currentDate->format('Y-m-d'),
+                    'date' => $dateKey,
                     'day' => $currentDate->format('D'),
                     'day_number' => $currentDate->format('d'),
                     'is_today' => $currentDate->isToday(),
+                    'schedule_status' => $scheduleStatus,
                 ];
             }
 
@@ -136,11 +222,15 @@ class ScheduleList extends Component
                 $week = [];
 
                 for ($i = 0; $i < 7; $i++) {
+                    $dateKey = $currentDay->format('Y-m-d');
+                    $scheduleStatus = $this->getScheduleStatus($dateKey);
+
                     $week[] = [
-                        'date' => $currentDay->format('Y-m-d'),
+                        'date' => $dateKey,
                         'day' => $currentDay->format('d'),
                         'is_today' => $currentDay->isToday(),
                         'is_current_month' => $currentDay->month === $date->month,
+                        'schedule_status' => $scheduleStatus,
                     ];
 
                     $currentDay->addDay();

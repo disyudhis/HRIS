@@ -50,6 +50,15 @@
                                     class="text-lg {{ $date['is_today'] ? 'text-blue-600 font-semibold' : 'text-gray-900' }}">
                                     {{ $date['day_number'] }}</div>
                             </div>
+
+                            {{-- Attendance Status Badge --}}
+                            @if ($date['schedule_status']['status'])
+                                <div class="mt-2 flex justify-center">
+                                    <span class="px-2 py-1 text-xs font-medium rounded-full {{ $date['schedule_status']['badge_class'] }}">
+                                        {{ $date['schedule_status']['label'] }}
+                                    </span>
+                                </div>
+                            @endif
                         </div>
 
                         <div class="p-2 min-h-[150px]">
@@ -66,9 +75,16 @@
                                                     : 'bg-gray-100 text-gray-800')) }}">
                                         <div class="font-medium">{{ $schedule->start_time->format('H:i') }} -
                                             {{ $schedule->end_time->format('H:i') }}</div>
-                                        <div>{{ $schedule->location }}</div>
+
+                                        {{-- Individual schedule status --}}
+                                        <div class="mt-1">
+                                            <span class="inline-block px-1 py-0.5 text-xs rounded {{ $schedule->attendance_status_badge_class }}">
+                                                {{ $schedule->attendance_status_label }}
+                                            </span>
+                                        </div>
+
                                         @if ($schedule->notes)
-                                            <div class="mt-1 text-xs">{{ $schedule->notes }}</div>
+                                            <div class="mt-1 text-xs">{{ $schedule->isFutureSchedule() ? '' : $schedule->notes }}</div>
                                         @endif
                                     </div>
                                 @endforeach
@@ -119,18 +135,31 @@
                 @php
                     $dateObj = Carbon\Carbon::parse($date['date']);
                     $hasSchedule = isset($schedules[$date['date']]) && count($schedules[$date['date']]) > 0;
+                    $scheduleStatus = $date['schedule_status'];
                 @endphp
 
                 <div class="relative">
-                    <!-- Blue vertical bar for days with schedule, gray for days without -->
-                    <div
-                        class="absolute left-0 top-0 bottom-0 w-2 rounded-l-lg {{ $hasSchedule ? 'bg-[#3085FE]' : 'bg-gray-300' }}">
+                    {{-- Status-based vertical bar --}}
+                    <div class="absolute left-0 top-0 bottom-0 w-2 rounded-l-lg
+                        {{ $scheduleStatus['status'] === 'present' ? 'bg-green-500' :
+                           ($scheduleStatus['status'] === 'late' ? 'bg-yellow-500' :
+                           ($scheduleStatus['status'] === 'absent' ? 'bg-red-500' :
+                           ($scheduleStatus['status'] === 'scheduled' ? 'bg-[#3085FE]' : 'bg-gray-300'))) }}">
                     </div>
 
                     <div class="pl-4 pb-4 border-b border-gray-200">
-                        <h3 class="text-lg font-bold text-gray-900 mb-4">
-                            {{ $dateObj->format('F d, Y') }}
-                        </h3>
+                        <div class="flex justify-between items-start mb-4">
+                            <h3 class="text-lg font-bold text-gray-900">
+                                {{ $dateObj->format('F d, Y') }}
+                            </h3>
+
+                            {{-- Status badge --}}
+                            @if ($scheduleStatus['status'])
+                                <span class="px-2 py-1 text-xs font-medium rounded-full {{ $scheduleStatus['badge_class'] }}">
+                                    {{ $scheduleStatus['label'] }}
+                                </span>
+                            @endif
+                        </div>
 
                         @if ($hasSchedule)
                             <div class="flex flex-wrap gap-4">
@@ -185,6 +214,19 @@
                                     </div>
                                 @endforeach
                             </div>
+
+                            {{-- Schedule details --}}
+                            @foreach ($schedules[$date['date']] as $schedule)
+                                <div class="mt-3 p-2 rounded-lg bg-gray-50">
+
+                                    <div class="text-xs {{ $schedule->attendance_status_badge_class }} inline-block px-2 py-1 rounded mt-1">
+                                        {{ $schedule->attendance_status_label }}
+                                    </div>
+                                    @if ($schedule->notes)
+                                        <div class="mt-1 text-xs text-gray-500">{{ $schedule->isFutureSchedule() ? '' : $schedule->notes }}</div>
+                                    @endif
+                                </div>
+                            @endforeach
                         @else
                             <div class="flex items-center">
                                 <div class="flex items-center justify-center w-12 h-12 rounded-lg bg-gray-100 mr-3">

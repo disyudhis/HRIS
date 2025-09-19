@@ -30,6 +30,7 @@ class AttendanceList extends Component
     public $conditionTypes = [
         'checked_in' => 'Checked In',
         'not_checked_in' => 'Not Checked In',
+        'not_checked_out' => 'Not Checked Out',
         'absent' => 'Absent',
         'late' => 'Late',
         'complete' => 'Complete (Both Check In & Out)',
@@ -171,10 +172,13 @@ class AttendanceList extends Component
                         return $user->checkIn === null && !$user->schedule->isHoliday();
 
                     case 'absent':
-                        return $user->checkIn === null || !$user->checkIn->is_checked;
+                        return $user->checkIn === null && Carbon::parse($user->schedule->end_time)->isPast();
 
                     case 'late':
                         return $user->checkIn !== null && $user->checkIn->status === Attendance::STATUS_LATE;
+
+                    case 'not_checked_out':
+                        return $user->checkIn !== null && $user->checkOut === null;
 
                     case 'complete':
                         return $user->checkIn !== null && $user->checkOut !== null;

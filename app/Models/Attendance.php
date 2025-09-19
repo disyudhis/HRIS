@@ -12,8 +12,8 @@ class Attendance extends Model
 
     const STATUS_PRESENT = "PRESENT";
     const STATUS_LATE = "LATE";
-    const STATUS_MISSED = "MISSED";
     const STATUS_ABSENT = "ABSENT";
+    const STATUS_NULL = "NULL";
 
     const TYPE_CHECK_IN = "CHECK_IN";
     const TYPE_CHECK_OUT = "CHECK_OUT";

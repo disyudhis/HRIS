@@ -152,7 +152,7 @@ class ScheduleForm extends Component
                 $this->endTime = '23:00';
                 break;
             case 'night':
-                $this->startTime = '20:00';
+                $this->startTime = '23:00';
                 $this->endTime = '07:00';
                 break;
             default:

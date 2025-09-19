@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('latitude')->nullable();
             $table->string('longitude')->nullable();
             $table->string('distance')->comment('Distance in meters from office')->nullable();
-            $table->enum('status', ['PRESENT', 'LATE', 'ABSENT', 'MISSED'])->default('PRESENT');
+            $table->enum('status', ['PRESENT', 'LATE', 'ABSENT'])->default('PRESENT');
             $table->text('notes')->nullable();
             $table->enum('type', ['CHECK_IN', 'CHECK_OUT'])->nullable();
             $table->boolean('is_checked')->default(false);
