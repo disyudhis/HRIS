@@ -172,7 +172,7 @@ class AttendanceList extends Component
                         return $user->checkIn === null && !$user->schedule->isHoliday();
 
                     case 'absent':
-                        return $user->checkIn === null && Carbon::parse($user->schedule->end_time)->isPast();
+                        return $user->checkIn === null && Carbon::parse($user->schedule->end_time)->isPast() && !$user->schedule->isHoliday();
 
                     case 'late':
                         return $user->checkIn !== null && $user->checkIn->status === Attendance::STATUS_LATE;
