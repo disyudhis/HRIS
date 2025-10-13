@@ -10,16 +10,7 @@ class Schedule extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'user_id',
-        'date',
-        'start_time',
-        'end_time',
-        'shift_type',
-        'notes',
-        'is_checked',
-        'created_by',
-    ];
+    protected $fillable = ['user_id', 'date', 'start_time', 'end_time', 'shift_type', 'notes', 'is_checked', 'created_by'];
 
     protected $casts = [
         'date' => 'date',
@@ -207,58 +198,53 @@ class Schedule extends Model
      */
     public function getAttendanceStatusAttribute()
     {
-        // If schedule is in the future, return 'scheduled' instead of 'absent'
-        if ($this->isFutureSchedule()) {
-            return 'scheduled';
-        }
-
         // If it's a holiday, no attendance expected
         if ($this->isHoliday()) {
             return 'holiday';
         }
 
-        $checkIn = $this->checkIn;
-        $checkOut = $this->checkOut;
+        $checkIn = $this->attendances()->where('type', Attendance::TYPE_CHECK_IN)->where('is_checked', true)->first();
+        $checkOut = $this->attendances()->where('type', Attendance::TYPE_CHECK_OUT)->where('is_checked', true)->first();
 
-        // If schedule has ended and no check-in, mark as absent
+        // Jika schedule sudah lewat dan tidak ada check-in, maka ABSENT
         if ($this->hasEnded() && !$checkIn) {
             return 'absent';
         }
 
-        // If currently active and no check-in, could be late or about to start
-        if ($this->isActiveNow() && !$checkIn) {
-            return 'late';
+        // Jika schedule masih belum lewat dan tidak ada check-in, maka NOT_CHECKED_IN
+        if (!$this->hasEnded() && !$checkIn) {
+            return 'not_checked_in';
         }
 
-        // If has check-in but schedule hasn't ended yet
+        // Jika ada check-in tapi schedule belum selesai
         if ($checkIn && !$this->hasEnded()) {
-            if ($this->isLateCheckIn($checkIn->created_at)) {
+            if ($this->isLateCheckIn($checkIn->checked_time)) {
                 return 'late';
             }
             return 'present';
         }
 
-        // If has both check-in and check-out
+        // Jika ada check-in dan check-out
         if ($checkIn && $checkOut) {
             $status = 'present';
 
-            if ($this->isLateCheckIn($checkIn->created_at)) {
+            if ($this->isLateCheckIn($checkIn->checked_time)) {
                 $status = 'late';
             }
 
-            if ($this->isEarlyCheckOut($checkOut->created_at)) {
+            if ($this->isEarlyCheckOut($checkOut->checked_time)) {
                 $status = $status === 'late' ? 'late_early_out' : 'early_out';
             }
 
             return $status;
         }
 
-        // If has check-in but no check-out and schedule has ended
+        // Jika ada check-in tapi tidak ada check-out dan schedule sudah selesai
         if ($checkIn && !$checkOut && $this->hasEnded()) {
-            return $this->isLateCheckIn($checkIn->created_at) ? 'late_no_checkout' : 'no_checkout';
+            return $this->isLateCheckIn($checkIn->checked_time) ? 'late_no_checkout' : 'no_checkout';
         }
 
-        // Default case - if schedule hasn't started yet
+        // Default: scheduled
         return 'scheduled';
     }
 
@@ -271,6 +257,7 @@ class Schedule extends Model
 
         $labels = [
             'scheduled' => 'Scheduled',
+            'not_checked_in' => 'Not Checked In',
             'present' => 'Present',
             'absent' => 'Absent',
             'late' => 'Late',
@@ -293,6 +280,7 @@ class Schedule extends Model
 
         $classes = [
             'scheduled' => 'bg-blue-100 text-blue-800',
+            'not_checked_in' => 'bg-red-100 text-red-800',
             'present' => 'bg-green-100 text-green-800',
             'absent' => 'bg-red-100 text-red-800',
             'late' => 'bg-yellow-100 text-yellow-800',

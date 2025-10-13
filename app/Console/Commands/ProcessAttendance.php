@@ -16,7 +16,7 @@ class ProcessAttendance extends Command
      *
      * @var string
      */
-    protected $signature = 'app:process-attendance';
+    protected $signature = 'attendance:process';
 
     /**
      * The console command description.
