@@ -164,23 +164,32 @@ class AttendanceList extends Component
         // Filter by attendance condition
         if ($this->selectedCondition) {
             $filteredCollection = $users->getCollection()->filter(function ($user) {
+                $status = $user->schedule->attendance_status;
+
                 switch ($this->selectedCondition) {
                     case 'checked_in':
+                        // Menampilkan yang sudah check-in (tidak peduli status)
                         return $user->checkIn !== null;
 
                     case 'not_checked_in':
-                        return $user->checkIn === null && !$user->schedule->isHoliday();
+                        // Menampilkan yang BELUM check-in dan schedule MASIH BERLANGSUNG
+                        // Status harus 'not_checked_in' (bukan 'absent')
+                        return $status === 'not_checked_in';
 
                     case 'absent':
-                        return $user->checkIn === null && Carbon::parse($user->schedule->end_time)->isPast() && !$user->schedule->isHoliday();
+                        // Menampilkan yang ABSENT (tidak check-in DAN schedule sudah berakhir)
+                        return $status === 'absent';
 
                     case 'late':
-                        return $user->checkIn !== null && $user->checkIn->status === Attendance::STATUS_LATE;
+                        // Menampilkan yang check-in LATE
+                        return $status === 'late' || $status === 'late_no_checkout' || $status === 'late_early_out';
 
                     case 'not_checked_out':
+                        // Menampilkan yang check-in tapi belum check-out
                         return $user->checkIn !== null && $user->checkOut === null;
 
                     case 'complete':
+                        // Menampilkan yang sudah lengkap (check-in dan check-out)
                         return $user->checkIn !== null && $user->checkOut !== null;
 
                     default:

@@ -198,53 +198,64 @@ class Schedule extends Model
      */
     public function getAttendanceStatusAttribute()
     {
-        // If it's a holiday, no attendance expected
+        // Jika ini adalah hari libur, tidak perlu absensi
         if ($this->isHoliday()) {
             return 'holiday';
+        }
+
+        // Validasi bahwa schedule memiliki start_time dan end_time
+        if (!$this->start_time || !$this->end_time) {
+            return 'scheduled';
         }
 
         $checkIn = $this->attendances()->where('type', Attendance::TYPE_CHECK_IN)->where('is_checked', true)->first();
         $checkOut = $this->attendances()->where('type', Attendance::TYPE_CHECK_OUT)->where('is_checked', true)->first();
 
-        // Jika schedule sudah lewat dan tidak ada check-in, maka ABSENT
-        if ($this->hasEnded() && !$checkIn) {
-            return 'absent';
+        // KASUS 1: Schedule belum mulai (masih di masa depan)
+        if ($this->isFutureSchedule()) {
+            return 'scheduled';
         }
 
-        // Jika schedule masih belum lewat dan tidak ada check-in, maka NOT_CHECKED_IN
-        if (!$this->hasEnded() && !$checkIn) {
-            return 'not_checked_in';
-        }
-
-        // Jika ada check-in tapi schedule belum selesai
-        if ($checkIn && !$this->hasEnded()) {
-            if ($this->isLateCheckIn($checkIn->checked_time)) {
-                return 'late';
+        // KASUS 2: Schedule masih berjalan (belum melewati end_time)
+        if (!$this->hasEnded()) {
+            if ($checkIn && $checkOut) {
+                // Sudah check-in dan check-out sebelum jadwal berakhir
+                if ($this->isLateCheckIn($checkIn->checked_time)) {
+                    return $this->isEarlyCheckOut($checkOut->checked_time) ? 'late_early_out' : 'late';
+                }
+                return $this->isEarlyCheckOut($checkOut->checked_time) ? 'early_out' : 'present';
+            } elseif ($checkIn) {
+                // Sudah check-in, menunggu check-out
+                if ($this->isLateCheckIn($checkIn->checked_time)) {
+                    return 'late';
+                }
+                return 'present';
+            } else {
+                // Belum check-in dan jadwal masih berlangsung
+                return 'not_checked_in';
             }
-            return 'present';
         }
 
-        // Jika ada check-in dan check-out
-        if ($checkIn && $checkOut) {
-            $status = 'present';
-
-            if ($this->isLateCheckIn($checkIn->checked_time)) {
-                $status = 'late';
+        // KASUS 3: Schedule sudah berakhir (melewati end_time)
+        if ($this->hasEnded()) {
+            if ($checkIn && $checkOut) {
+                // Sudah check-in dan check-out
+                if ($this->isLateCheckIn($checkIn->checked_time)) {
+                    return $this->isEarlyCheckOut($checkOut->checked_time) ? 'late_early_out' : 'late';
+                }
+                return $this->isEarlyCheckOut($checkOut->checked_time) ? 'early_out' : 'present';
+            } elseif ($checkIn && !$checkOut) {
+                // Check-in tapi tidak check-out (masih bekerja atau lupa check-out)
+                if ($this->isLateCheckIn($checkIn->checked_time)) {
+                    return 'late_no_checkout';
+                }
+                return 'no_checkout';
+            } else {
+                // Tidak ada check-in sama sekali (ABSENT)
+                return 'absent';
             }
-
-            if ($this->isEarlyCheckOut($checkOut->checked_time)) {
-                $status = $status === 'late' ? 'late_early_out' : 'early_out';
-            }
-
-            return $status;
         }
 
-        // Jika ada check-in tapi tidak ada check-out dan schedule sudah selesai
-        if ($checkIn && !$checkOut && $this->hasEnded()) {
-            return $this->isLateCheckIn($checkIn->checked_time) ? 'late_no_checkout' : 'no_checkout';
-        }
-
-        // Default: scheduled
         return 'scheduled';
     }
 
@@ -280,10 +291,10 @@ class Schedule extends Model
 
         $classes = [
             'scheduled' => 'bg-blue-100 text-blue-800',
-            'not_checked_in' => 'bg-red-100 text-red-800',
+            'not_checked_in' => 'bg-yellow-100 text-yellow-800',
             'present' => 'bg-green-100 text-green-800',
             'absent' => 'bg-red-100 text-red-800',
-            'late' => 'bg-yellow-100 text-yellow-800',
+            'late' => 'bg-orange-100 text-orange-800',
             'early_out' => 'bg-orange-100 text-orange-800',
             'late_early_out' => 'bg-red-100 text-red-800',
             'no_checkout' => 'bg-purple-100 text-purple-800',
