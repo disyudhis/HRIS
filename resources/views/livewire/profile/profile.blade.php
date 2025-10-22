@@ -181,7 +181,7 @@
                         <div class="flex flex-col items-center mb-8">
                             <div class="relative mb-4">
                                 <div class="w-40 h-40 rounded-full overflow-hidden border-4 border-white shadow-md">
-                                    <img src="{{ $photo }}" alt="{{ $user->name }}"
+                                    <img src="{{ asset('storage/'. $user->profile_photo_path) }}" alt="{{ $user->name }}"
                                         class="w-full h-full object-cover">
                                 </div>
 
