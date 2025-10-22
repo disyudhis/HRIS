@@ -253,7 +253,7 @@ class ProfileEdit extends Component
         if ($this->photo && is_object($this->photo)) {
             // Delete old photo if exists
             if ($this->user->profile_photo_path) {
-                Storage::disk('public')->delete($this->user->profile_photo_path);
+                Storage::disk('cpanel')->delete($this->user->profile_photo_path);
             }
 
             $photoPath = $this->uploadPhotoToStorage($this->photo);
@@ -340,8 +340,8 @@ class ProfileEdit extends Component
 
             // Create the directory if it doesn't exist
             $directory = 'profile-photos';
-            if (!Storage::disk('public')->exists($directory)) {
-                Storage::disk('public')->makeDirectory($directory);
+            if (!Storage::disk('cpanel')->exists($directory)) {
+                Storage::disk('cpanel')->makeDirectory($directory);
             }
 
             // Process image with Intervention Image v3
@@ -354,7 +354,7 @@ class ProfileEdit extends Component
 
             // Store the processed image
             $path = $directory . '/' . $filename;
-            Storage::disk('public')->put($path, $processedImage);
+            Storage::disk('cpanel')->put($path, $processedImage);
 
             return $path;
         } catch (\Exception $e) {
