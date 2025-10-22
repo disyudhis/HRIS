@@ -157,13 +157,6 @@ class ProfileEdit extends Component
         $this->phone = $this->user->phone;
         $this->employee_id = $this->user->employee_id;
 
-        // Set current photo URL for display
-        if ($this->user->profile_photo_path) {
-            $this->current_photo = Storage::url($this->user->profile_photo_path);
-        } else {
-            $this->current_photo = null;
-        }
-
         // Additional Information
         if ($this->userDetails) {
             $this->gender = $this->userDetails->gender;
@@ -225,13 +218,19 @@ class ProfileEdit extends Component
     // Add method to get photo URL for display
     public function getPhotoUrlProperty()
     {
-        // If new photo is uploaded, show temporary URL
+        // Jika ada foto baru yang diupload (temporary)
         if ($this->photo && is_object($this->photo)) {
             return $this->photo->temporaryUrl();
         }
 
-        // Otherwise show current photo
-        return $this->current_photo;
+        // Jika ada foto yang sudah tersimpan
+        if ($this->user->profile_photo_path) {
+            // Pastikan path tidak mengandung 'public/' di awal
+            $path = str_replace('public/', '', $this->user->profile_photo_path);
+            return asset('storage/' . $path);
+        }
+
+        return null;
     }
 
     public function updateProfile()
@@ -259,11 +258,7 @@ class ProfileEdit extends Component
             $photoPath = $this->uploadPhotoToStorage($this->photo);
             if ($photoPath) {
                 $this->user->profile_photo_path = $photoPath;
-                // Remove public_id field since we're not using Cloudinary anymore
                 $this->user->profile_photo_public_id = null;
-
-                // Update current photo URL
-                $this->current_photo = Storage::url($photoPath);
             }
         }
 
@@ -327,8 +322,12 @@ class ProfileEdit extends Component
         // Reset photo property after successful save
         $this->photo = null;
 
+        // PENTING: Refresh user instance untuk memastikan data terbaru
+        $this->user->refresh();
+
         session()->flash('message', 'Profile successfully updated.');
 
+        // Redirect ke halaman yang sama
         return redirect()->route('profile.edit');
     }
 

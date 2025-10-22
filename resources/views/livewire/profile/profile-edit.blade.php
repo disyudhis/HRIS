@@ -20,7 +20,7 @@
                 <div
                     class="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden border-2 border-white shadow-md bg-gray-200">
                     @if ($this->photoUrl)
-                        <img src="{{ asset('storage/'. $user->profile_photo_path) }}" alt="{{ $user->name }}" class="w-full h-full object-cover">
+                        <img src="{{ $this->photoUrl }}" alt="{{ $user->name }}" class="w-full h-full object-cover">
                     @else
                         <!-- Default avatar placeholder -->
                         <div class="w-full h-full flex items-center justify-center bg-gray-300">
@@ -64,14 +64,6 @@
             @error('photo')
                 <span class="text-red-500 text-sm">{{ $message }}</span>
             @enderror
-
-            <!-- Optional: Show file info when selected -->
-            {{-- @if ($photo && is_object($photo))
-                <div class="text-sm text-gray-600 text-center">
-                    <p>{{ $photo->getClientOriginalName() }}</p>
-                    <p>{{ number_format($photo->getSize() / 1024, 2) }} KB</p>
-                </div>
-            @endif --}}
         </div>
 
         <!-- Form Sections -->
