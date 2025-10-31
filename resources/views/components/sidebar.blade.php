@@ -127,7 +127,7 @@
                 class="flex items-center w-full p-2 rounded-lg hover:bg-gray-100 transition-colors">
                 <div
                     class="w-10 h-10 flex-shrink-0 rounded-full bg-[#3085FE] flex items-center justify-center text-white mr-3">
-                    {{ Auth::user()->name[0] ?? 'U' }}
+                    <img src="{{ asset('storage/' . Auth::user()->profile_photo_path) }}" alt="">
                 </div>
                 <div class="flex-1 min-w-0">
                     <div class="font-medium text-gray-900 truncate">{{ Auth::user()->name ?? 'User' }}</div>
