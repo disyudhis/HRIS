@@ -125,9 +125,16 @@
             <!-- User Profile Button -->
             <button @click="open = !open"
                 class="flex items-center w-full p-2 rounded-lg hover:bg-gray-100 transition-colors">
-                <img src="{{ asset('storage/' . Auth::user()->profile_photo_path) }}" alt=""
-                    class="w-10 h-10 flex-shrink-0 rounded-full bg-[#3085FE] flex items-center justify-center text-white mr-3">
-                </img>
+                @if (Auth::user()->profile_photo_path === null)
+                    <div
+                        class="w-10 h-10 flex-shrink-0 rounded-full bg-[#3085FE] flex items-center justify-center text-white mr-3">
+                        {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+                    </div>
+                @else
+                    <img src="{{ asset('storage/' . Auth::user()->profile_photo_path) }}" alt=""
+                        class="w-10 h-10 flex-shrink-0 rounded-full bg-[#3085FE] flex items-center justify-center text-white mr-3">
+                    </img>
+                @endif
                 <div class="flex-1 min-w-0">
                     <div class="font-medium text-gray-900 truncate">{{ Auth::user()->name ?? 'User' }}</div>
                     <div class="text-xs text-gray-500 truncate">{{ ucfirst(Auth::user()->user_type) }}</div>
