@@ -134,13 +134,13 @@
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="flex items-center">
                                     <div class="flex-shrink-0 h-10 w-10">
-                                        @if ($user->photo_profile_path === null)
+                                        @if ($user->profile_photo_path === null)
                                             <div
                                                 class="h-10 w-10 rounded-full bg-[#3085FE] flex items-center justify-center text-white">
                                                 {{ strtoupper(substr($user->name, 0, 1)) }}
                                             </div>
                                         @else
-                                            <img src="{{ asset('storage/' . $user->photo_profile_path) }}"
+                                            <img src="{{ asset('storage/' . $user->profile_photo_path) }}"
                                                 class="h-10 w-10 rounded-full bg-[#3085FE] flex items-center justify-center text-white">
                                             </img>
                                         @endif
