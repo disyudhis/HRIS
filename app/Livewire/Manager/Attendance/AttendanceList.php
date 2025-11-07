@@ -6,7 +6,6 @@ use App\Models\Schedule;
 use App\Models\User;
 use App\Models\Attendance;
 use Carbon\Carbon;
-use Illuminate\Foundation\Console\LangPublishCommand;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Illuminate\Support\Facades\Auth;
@@ -98,109 +97,108 @@ class AttendanceList extends Component
      */
     public function getUsersWithSchedulesProperty()
     {
-        $currentManager = $this->getCurrentManager();
+        try {
+            $currentManager = $this->getCurrentManager();
 
-        $query = User::query()
-            ->where('user_type', User::ROLE_EMPLOYEE)
-            ->where('manager_id', $currentManager->id)
-            ->with([
-                'schedules' => function ($query) {
-                    $query->where('date', $this->selectedDate)->with([
-                        'attendances' => function ($q) {
-                            $q->where('is_checked', true);
-                        },
-                    ]);
-                },
-            ]);
-
-        // Filter by specific user if selected
-        if ($this->selectedUser) {
-            $query->where('id', $this->selectedUser);
-        }
-
-        $users = $query->orderBy('name')->paginate(10);
-
-        // Transform users to include schedule and attendance data
-        $users->getCollection()->transform(function ($user) {
-            // Get schedule for the selected date
-            $schedule = $user->schedules->first();
-
-            if (!$schedule) {
-                // Create default schedule (holiday) for display purposes only
-                $schedule = new Schedule([
-                    'user_id' => $user->id,
-                    'date' => $this->selectedDate,
-                    'shift_type' => 'holiday',
-                    'start_time' => null,
-                    'end_time' => null,
-                    'notes' => 'No schedule set',
+            $query = User::query()
+                ->where('user_type', User::ROLE_EMPLOYEE)
+                ->where('manager_id', $currentManager->id)
+                ->with([
+                    'schedules' => function ($query) {
+                        $query->where('date', $this->selectedDate)->with([
+                            'attendances' => function ($q) {
+                                $q->where('is_checked', true);
+                            },
+                        ]);
+                    },
                 ]);
+
+            // Filter by specific user if selected
+            if ($this->selectedUser) {
+                $query->where('id', $this->selectedUser);
             }
 
-            $user->schedule = $schedule;
-
-            // Get attendance data if schedule exists in database
-            if ($schedule->exists) {
-                $user->checkIn = $schedule->attendances->where('type', Attendance::TYPE_CHECK_IN)->where('is_checked', true)->first();
-
-                $user->checkOut = $schedule->attendances->where('type', Attendance::TYPE_CHECK_OUT)->where('is_checked', true)->first();
-            } else {
-                $user->checkIn = null;
-                $user->checkOut = null;
+            // Filter by shift type BEFORE pagination
+            if ($this->selectedShift) {
+                $query->whereHas('schedules', function ($q) {
+                    $q->where('date', $this->selectedDate)->where('shift_type', $this->selectedShift);
+                });
             }
 
-            return $user;
-        });
+            $users = $query->orderBy('name')->paginate(10);
 
-        // Filter by shift type after transformation
-        if ($this->selectedShift) {
-            $filteredCollection = $users->getCollection()->filter(function ($user) {
-                return $user->schedule->shift_type === $this->selectedShift;
-            });
+            // Transform users to include schedule and attendance data
+            $users->getCollection()->transform(function ($user) {
+                // Get schedule for the selected date
+                $schedule = $user->schedules->first();
 
-            $users->setCollection($filteredCollection);
-        }
-
-        // Filter by attendance condition
-        if ($this->selectedCondition) {
-            $filteredCollection = $users->getCollection()->filter(function ($user) {
-                $status = $user->schedule->attendance_status;
-
-                switch ($this->selectedCondition) {
-                    case 'checked_in':
-                        // Menampilkan yang sudah check-in (tidak peduli status)
-                        return $user->checkIn !== null;
-
-                    case 'not_checked_in':
-                        // Menampilkan yang BELUM check-in dan schedule MASIH BERLANGSUNG
-                        // Status harus 'not_checked_in' (bukan 'absent')
-                        return $status === 'not_checked_in';
-
-                    case 'absent':
-                        // Menampilkan yang ABSENT (tidak check-in DAN schedule sudah berakhir)
-                        return $status === 'absent';
-
-                    case 'late':
-                        // Menampilkan yang check-in LATE
-                        return $status === 'late' || $status === 'late_no_checkout' || $status === 'late_early_out';
-
-                    case 'not_checked_out':
-                        // Menampilkan yang check-in tapi belum check-out
-                        return $user->checkIn !== null && $user->checkOut === null;
-
-                    case 'complete':
-                        // Menampilkan yang sudah lengkap (check-in dan check-out)
-                        return $user->checkIn !== null && $user->checkOut !== null;
-
-                    default:
-                        return true;
+                if (!$schedule) {
+                    // Create default schedule (holiday) for display purposes only
+                    $schedule = new Schedule([
+                        'user_id' => $user->id,
+                        'date' => $this->selectedDate,
+                        'shift_type' => 'holiday',
+                        'start_time' => null,
+                        'end_time' => null,
+                        'notes' => 'No schedule set',
+                    ]);
                 }
+
+                $user->schedule = $schedule;
+
+                // Get attendance data if schedule exists in database
+                if ($schedule->exists) {
+                    $user->checkIn = $schedule->attendances->where('type', Attendance::TYPE_CHECK_IN)->where('is_checked', true)->first();
+
+                    $user->checkOut = $schedule->attendances->where('type', Attendance::TYPE_CHECK_OUT)->where('is_checked', true)->first();
+                } else {
+                    $user->checkIn = null;
+                    $user->checkOut = null;
+                }
+
+                return $user;
             });
 
-            $users->setCollection($filteredCollection);
-        }
+            // Filter by attendance condition after transformation
+            if ($this->selectedCondition) {
+                $filteredCollection = $users->getCollection()->filter(function ($user) {
+                    $status = $user->schedule->attendance_status;
 
-        return $users;
+                    switch ($this->selectedCondition) {
+                        case 'checked_in':
+                            return $user->checkIn !== null;
+
+                        case 'not_checked_in':
+                            return $status === 'not_checked_in';
+
+                        case 'absent':
+                            return $status === 'absent';
+
+                        case 'late':
+                            return in_array($status, ['late', 'late_no_checkout', 'late_early_out']);
+
+                        case 'not_checked_out':
+                            return $user->checkIn !== null && $user->checkOut === null;
+
+                        case 'complete':
+                            return $user->checkIn !== null && $user->checkOut !== null;
+
+                        default:
+                            return true;
+                    }
+                });
+
+                $users->setCollection($filteredCollection);
+            }
+
+            return $users;
+        } catch (\Exception $e) {
+            // Log error untuk debugging
+            \Log::error('Error in getUsersWithSchedulesProperty: ' . $e->getMessage());
+
+            // Return empty paginator
+            return new \Illuminate\Pagination\LengthAwarePaginator(collect([]), 0, 10, 1);
+        }
     }
 
     /**
@@ -208,9 +206,14 @@ class AttendanceList extends Component
      */
     public function getUsersProperty()
     {
-        $currentManager = $this->getCurrentManager();
+        try {
+            $currentManager = $this->getCurrentManager();
 
-        return User::where('user_type', User::ROLE_EMPLOYEE)->where('manager_id', $currentManager->id)->orderBy('name')->get();
+            return User::where('user_type', User::ROLE_EMPLOYEE)->where('manager_id', $currentManager->id)->orderBy('name')->get();
+        } catch (\Exception $e) {
+            \Log::error('Error in getUsersProperty: ' . $e->getMessage());
+            return collect([]);
+        }
     }
 
     /**
@@ -218,9 +221,14 @@ class AttendanceList extends Component
      */
     public function getTotalEmployeesProperty()
     {
-        $currentManager = $this->getCurrentManager();
+        try {
+            $currentManager = $this->getCurrentManager();
 
-        return User::where('user_type', User::ROLE_EMPLOYEE)->where('manager_id', $currentManager->id)->count();
+            return User::where('user_type', User::ROLE_EMPLOYEE)->where('manager_id', $currentManager->id)->count();
+        } catch (\Exception $e) {
+            \Log::error('Error in getTotalEmployeesProperty: ' . $e->getMessage());
+            return 0;
+        }
     }
 
     /**
@@ -236,9 +244,12 @@ class AttendanceList extends Component
         // Jika manager tidak memiliki bawahan, tampilkan pesan khusus
         if (!$this->hasEmployees) {
             return view('livewire.manager.attendance.attendance-list', [
+                'usersWithSchedules' => new \Illuminate\Pagination\LengthAwarePaginator(collect([]), 0, 10, 1),
+                'users' => collect([]),
                 'message' => 'Anda belum memiliki pegawai yang ditugaskan sebagai bawahan.',
                 'shiftTypes' => $this->shiftTypes,
                 'conditionTypes' => $this->conditionTypes,
+                'totalEmployees' => 0,
             ]);
         }
 
