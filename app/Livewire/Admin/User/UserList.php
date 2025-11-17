@@ -18,7 +18,6 @@ class UserList extends Component
     public $filterOffice = '';
 
     public $confirmingDeletion = false;
-
     public $userToDelete = null;
 
     protected $queryString = [
@@ -29,13 +28,14 @@ class UserList extends Component
         'filterOffice' => ['except' => ''],
     ];
 
-    public function confirmDelete($userId) {
+    public function confirmDelete($userId)
+    {
         $this->confirmingDeletion = true;
         $this->userToDelete = $userId;
     }
 
-
-    public function cancelDelete(){
+    public function cancelDelete()
+    {
         $this->confirmingDeletion = false;
         $this->userToDelete = null;
     }
@@ -55,7 +55,7 @@ class UserList extends Component
         $this->resetPage();
     }
 
-    public function updatingfilterRole()
+    public function updatingFilterRole()
     {
         $this->resetPage();
     }
@@ -71,7 +71,7 @@ class UserList extends Component
 
         if ($user) {
             // Jika user adalah manager, pastikan tidak ada employee yang terkait
-            if ($user->user_type === 'manager' && $user->employees->count() > 0) {
+            if ($user->user_type === 'MANAGER' && $user->employees->count() > 0) {
                 session()->flash('error', 'Cannot delete manager with assigned employees. Please reassign employees first.');
                 return;
             }
@@ -89,14 +89,26 @@ class UserList extends Component
     {
         $offices = Offices::orderBy('name')->get();
 
-        $users = User::where('id', '!=', auth()->id()) // Tidak menampilkan admin
+        $users = User::with(['office', 'user_details', 'manager']) // Eager loading untuk optimasi
+            ->where('id', '!=', auth()->id()) // Tidak menampilkan admin yang sedang login
             ->when($this->search, function ($query) {
-                return $query->where(function ($q) {
-                    $q->where('name', 'ilike', '%' . $this->search . '%')
-                      ->orWhere('email', 'ilike', '%' . $this->search . '%')
-                      ->orWhere('department', 'ilike', '%' . $this->search . '%')
-                      ->orWhere('position', 'ilike', '%' . $this->search . '%')
-                      ->orWhere('employee_id', 'ilike', '%' . $this->search . '%');
+                $searchTerm = '%' . $this->search . '%';
+
+                return $query->where(function ($q) use ($searchTerm) {
+                    // Pencarian di tabel users
+                    $q->where('name', 'like', $searchTerm)
+                        ->orWhere('full_name', 'like', $searchTerm)
+                        ->orWhere('email', 'like', $searchTerm)
+                        ->orWhere('employee_id', 'like', $searchTerm)
+                        ->orWhere('phone', 'like', $searchTerm)
+                        // Pencarian di relasi user_details
+                        ->orWhereHas('user_details', function ($detailQuery) use ($searchTerm) {
+                            $detailQuery->where('bidang', 'like', $searchTerm)->orWhere('sub_bidang', 'like', $searchTerm)->orWhere('address', 'like', $searchTerm)->orWhere('kota', 'like', $searchTerm)->orWhere('provinsi', 'like', $searchTerm)->orWhere('pendidikan_terakhir', 'like', $searchTerm)->orWhere('jurusan', 'like', $searchTerm)->orWhere('status_kontrak', 'like', $searchTerm);
+                        })
+                        // Pencarian di relasi office
+                        ->orWhereHas('office', function ($officeQuery) use ($searchTerm) {
+                            $officeQuery->where('name', 'like', $searchTerm);
+                        });
                 });
             })
             ->when($this->filterRole, function ($query) {
@@ -110,7 +122,7 @@ class UserList extends Component
 
         return view('livewire.admin.user.user-list', [
             'users' => $users,
-            'offices' => $offices
+            'offices' => $offices,
         ]);
     }
 }

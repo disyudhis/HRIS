@@ -190,7 +190,7 @@ class CheckIn extends Component
         $alreadyCheckedIn = $this->todayCheckIn && $this->todayCheckIn->is_checked;
 
         // Allow check-in 30 minutes before schedule starts
-        $checkInWindow = $scheduleStart->copy()->subMinutes(30);
+        $checkInWindow = $scheduleStart->copy()->subMinutes(60);
 
         if ($scheduleEnd->lt($scheduleStart)) {
             // Cross midnight
@@ -436,7 +436,7 @@ class CheckIn extends Component
         $scheduleStart = Carbon::parse($this->todaySchedule->start_time);
 
         // Consider late if more than 15 minutes after schedule start
-        if ($now->gt($scheduleStart->copy()->addMinutes(15))) {
+        if ($now->gt($scheduleStart->copy()->addMinutes(30))) {
             return Attendance::STATUS_LATE;
         }
 
