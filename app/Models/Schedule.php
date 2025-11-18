@@ -10,6 +10,9 @@ class Schedule extends Model
 {
     use HasFactory;
 
+    // Grace period untuk keterlambatan dalam menit
+    const LATE_GRACE_PERIOD_MINUTES = 30;
+
     protected $fillable = ['user_id', 'date', 'start_time', 'end_time', 'shift_type', 'notes', 'is_checked', 'created_by'];
 
     protected $casts = [
@@ -123,7 +126,8 @@ class Schedule extends Model
     }
 
     /**
-     * Check if employee is late for check in
+     * Check if employee is late for check in (with grace period)
+     * Grace period: 30 menit
      */
     public function isLateCheckIn($checkInTime = null)
     {
@@ -132,7 +136,30 @@ class Schedule extends Model
         }
 
         $checkInTime = $checkInTime ?: now();
-        return Carbon::parse($checkInTime)->gt($this->start_time);
+        $checkInCarbon = Carbon::parse($checkInTime);
+        $scheduleStart = Carbon::parse($this->date->format('Y-m-d') . ' ' . $this->start_time->format('H:i:s'));
+
+        // Hitung selisih dalam menit
+        $minutesLate = $scheduleStart->diffInMinutes($checkInCarbon, false);
+
+        // Dianggap late jika terlambat lebih dari grace period (30 menit)
+        return $minutesLate > self::LATE_GRACE_PERIOD_MINUTES;
+    }
+
+    /**
+     * Get minutes late (can be negative if early)
+     */
+    public function getMinutesLate($checkInTime = null)
+    {
+        if (!$this->isWorkingDay() || !$this->start_time) {
+            return 0;
+        }
+
+        $checkInTime = $checkInTime ?: now();
+        $checkInCarbon = Carbon::parse($checkInTime);
+        $scheduleStart = Carbon::parse($this->date->format('Y-m-d') . ' ' . $this->start_time->format('H:i:s'));
+
+        return $scheduleStart->diffInMinutes($checkInCarbon, false);
     }
 
     /**
@@ -195,6 +222,7 @@ class Schedule extends Model
     /**
      * Get attendance status for this schedule
      * Returns: 'scheduled', 'present', 'absent', 'late', 'early_out', 'partial'
+     * UPDATED: Dengan grace period 30 menit untuk late check-in
      */
     public function getAttendanceStatusAttribute()
     {
@@ -220,16 +248,20 @@ class Schedule extends Model
         if (!$this->hasEnded()) {
             if ($checkIn && $checkOut) {
                 // Sudah check-in dan check-out sebelum jadwal berakhir
-                if ($this->isLateCheckIn($checkIn->checked_time)) {
-                    return $this->isEarlyCheckOut($checkOut->checked_time) ? 'late_early_out' : 'late';
-                }
-                return $this->isEarlyCheckOut($checkOut->checked_time) ? 'early_out' : 'present';
-            } elseif ($checkIn) {
-                // Sudah check-in, menunggu check-out
-                if ($this->isLateCheckIn($checkIn->checked_time)) {
+                $isLate = $this->isLateCheckIn($checkIn->checked_time);
+                $isEarlyOut = $this->isEarlyCheckOut($checkOut->checked_time);
+
+                if ($isLate && $isEarlyOut) {
+                    return 'late_early_out';
+                } elseif ($isLate) {
                     return 'late';
+                } elseif ($isEarlyOut) {
+                    return 'early_out';
                 }
                 return 'present';
+            } elseif ($checkIn) {
+                // Sudah check-in, menunggu check-out
+                return $this->isLateCheckIn($checkIn->checked_time) ? 'late' : 'present';
             } else {
                 // Belum check-in dan jadwal masih berlangsung
                 return 'not_checked_in';
@@ -240,16 +272,20 @@ class Schedule extends Model
         if ($this->hasEnded()) {
             if ($checkIn && $checkOut) {
                 // Sudah check-in dan check-out
-                if ($this->isLateCheckIn($checkIn->checked_time)) {
-                    return $this->isEarlyCheckOut($checkOut->checked_time) ? 'late_early_out' : 'late';
+                $isLate = $this->isLateCheckIn($checkIn->checked_time);
+                $isEarlyOut = $this->isEarlyCheckOut($checkOut->checked_time);
+
+                if ($isLate && $isEarlyOut) {
+                    return 'late_early_out';
+                } elseif ($isLate) {
+                    return 'late';
+                } elseif ($isEarlyOut) {
+                    return 'early_out';
                 }
-                return $this->isEarlyCheckOut($checkOut->checked_time) ? 'early_out' : 'present';
+                return 'present';
             } elseif ($checkIn && !$checkOut) {
                 // Check-in tapi tidak check-out (masih bekerja atau lupa check-out)
-                if ($this->isLateCheckIn($checkIn->checked_time)) {
-                    return 'late_no_checkout';
-                }
-                return 'no_checkout';
+                return $this->isLateCheckIn($checkIn->checked_time) ? 'late_no_checkout' : 'no_checkout';
             } else {
                 // Tidak ada check-in sama sekali (ABSENT)
                 return 'absent';
@@ -303,5 +339,32 @@ class Schedule extends Model
         ];
 
         return $classes[$status] ?? 'bg-gray-100 text-gray-800';
+    }
+
+    /**
+     * Get formatted late time (for display purposes)
+     */
+    public function getFormattedLateTimeAttribute()
+    {
+        $checkIn = $this->attendances()->where('type', Attendance::TYPE_CHECK_IN)->where('is_checked', true)->first();
+
+        if (!$checkIn || !$this->isLateCheckIn($checkIn->checked_time)) {
+            return null;
+        }
+
+        $minutesLate = $this->getMinutesLate($checkIn->checked_time);
+
+        if ($minutesLate < 60) {
+            return $minutesLate . ' minutes late';
+        }
+
+        $hours = floor($minutesLate / 60);
+        $minutes = $minutesLate % 60;
+
+        if ($minutes > 0) {
+            return $hours . 'h ' . $minutes . 'm late';
+        }
+
+        return $hours . 'h late';
     }
 }
