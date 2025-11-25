@@ -183,109 +183,126 @@
                                 @endif
                             </td>
 
-                            <!-- Attendance Status -->
-                            <td class="px-4 py-4 text-center">
+                            <!-- Attendance Status - Compact & Mobile Friendly Version -->
+                            <td class="px-4 py-4">
                                 @if ($user->schedule->isHoliday())
-                                    <span
-                                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor"
-                                            viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z">
-                                            </path>
-                                        </svg>
-                                        Holiday
-                                    </span>
+                                    <!-- Holiday Status -->
+                                    <div class="flex justify-center">
+                                        <span
+                                            class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor"
+                                                viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z">
+                                                </path>
+                                            </svg>
+                                            Holiday
+                                        </span>
+                                    </div>
                                 @else
-                                    <div class="space-y-1">
-                                        {{-- Use the unified status from model --}}
-                                        @php
-                                            $status = $user->schedule->attendance_status;
-                                            $statusLabel = $user->schedule->attendance_status_label;
-                                            $badgeClass = $user->schedule->attendance_status_badge_class;
-                                        @endphp
+                                    @php
+                                        $status = $user->schedule->attendance_status;
+                                        $hasCheckIn = $user->checkIn !== null;
+                                        $hasCheckOut = $user->checkOut !== null;
+                                        $isLate =
+                                            $hasCheckIn && $user->schedule->isLateCheckIn($user->checkIn->checked_time);
+                                        $isEarlyOut =
+                                            $hasCheckOut &&
+                                            $user->schedule->isEarlyCheckOut($user->checkOut->checked_time);
+                                    @endphp
 
-                                        @if ($status === 'not_checked_in')
-                                            {{-- Still waiting for check-in (schedule hasn't ended yet) --}}
-                                            <span
-                                                class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
-                                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor"
-                                                    viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                        stroke-width="2"
-                                                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                                </svg>
-                                                {{ $statusLabel }}
-                                            </span>
-                                        @elseif ($status === 'absent')
-                                            {{-- Schedule ended without check-in --}}
-                                            <span
-                                                class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800">
-                                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor"
-                                                    viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                        stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                                </svg>
-                                                {{ $statusLabel }}
-                                            </span>
-                                        @elseif ($status === 'present')
-                                            {{-- Checked in on time --}}
-                                            <span
-                                                class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">
-                                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor"
-                                                    viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                        stroke-width="2"
-                                                        d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1">
-                                                    </path>
-                                                </svg>
-                                                {{ $user->checkIn ? ($user->checkIn->checked_time ? \Carbon\Carbon::parse($user->checkIn->checked_time)->format('H:i') : '-') : '-' }}
-                                            </span>
-                                        @elseif ($status === 'late')
-                                            {{-- Checked in late --}}
-                                            <span
-                                                class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
-                                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor"
-                                                    viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                        stroke-width="2"
-                                                        d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1">
-                                                    </path>
-                                                </svg>
-                                                {{ $user->checkIn ? ($user->checkIn->checked_time ? \Carbon\Carbon::parse($user->checkIn->checked_time)->format('H:i') : '-') : '-' }}
-                                                <span class="ml-1 text-xs">(Late)</span>
-                                            </span>
-                                        @elseif ($status === 'no_checkout')
-                                            {{-- Checked in but not checked out --}}
-                                            <span
-                                                class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
-                                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor"
-                                                    viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                        stroke-width="2"
-                                                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                                </svg>
-                                                Still Working
-                                            </span>
-                                        @elseif ($status === 'early_out')
-                                            {{-- Checked out early --}}
-                                            <span
-                                                class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-orange-100 text-orange-800">
-                                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor"
-                                                    viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                        stroke-width="2"
-                                                        d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1">
-                                                    </path>
-                                                </svg>
-                                                {{ $user->checkOut ? ($user->checkOut->checked_time ? \Carbon\Carbon::parse($user->checkOut->checked_time)->format('H:i') : '-') : '-' }}
-                                                <span class="ml-1 text-xs">(Early)</span>
-                                            </span>
+                                    <div class="flex flex-col items-center space-y-1.5">
+                                        @if ($status === 'absent')
+                                            <!-- Absent -->
+                                            <div class="flex items-center justify-center w-full">
+                                                <span
+                                                    class="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium bg-red-50 text-red-700 border border-red-200">
+                                                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor"
+                                                        viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                                    </svg>
+                                                    Absent
+                                                </span>
+                                            </div>
+                                        @elseif (!$hasCheckIn)
+                                            <!-- Not Checked In Yet -->
+                                            <div class="flex items-center justify-center w-full">
+                                                <span
+                                                    class="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium bg-yellow-50 text-yellow-700 border border-yellow-200">
+                                                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor"
+                                                        viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                    </svg>
+                                                    Not Checked In
+                                                </span>
+                                            </div>
                                         @else
-                                            <span
-                                                class="inline-flex items-center px-2 py-1 rounded text-xs font-medium {{ $badgeClass }}">
-                                                {{ $statusLabel }}
-                                            </span>
+                                            <!-- Has Check In/Out Data -->
+                                            <div class="flex items-center justify-center space-x-3 w-full">
+                                                <!-- Check In Time -->
+                                                <div class="flex flex-col items-center">
+                                                    <div
+                                                        class="flex items-center space-x-1 {{ $isLate ? 'text-orange-600' : 'text-green-600' }}">
+                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor"
+                                                            viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                stroke-width="2"
+                                                                d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1">
+                                                            </path>
+                                                        </svg>
+                                                        <span class="text-sm font-bold">
+                                                            {{ \Carbon\Carbon::parse($user->checkIn->checked_time)->format('H:i') }}
+                                                        </span>
+                                                    </div>
+                                                    <span
+                                                        class="text-xs text-gray-500 mt-0.5">In{{ $isLate ? ' (Late)' : '' }}</span>
+                                                </div>
+
+                                                <span class="text-gray-300 text-lg">→</span>
+
+                                                <!-- Check Out Time -->
+                                                <div class="flex flex-col items-center">
+                                                    @if ($hasCheckOut)
+                                                        <div
+                                                            class="flex items-center space-x-1 {{ $isEarlyOut ? 'text-orange-600' : 'text-blue-600' }}">
+                                                            <svg class="w-3.5 h-3.5" fill="none"
+                                                                stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                                    stroke-width="2"
+                                                                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1">
+                                                                </path>
+                                                            </svg>
+                                                            <span class="text-sm font-bold">
+                                                                {{ \Carbon\Carbon::parse($user->checkOut->checked_time)->format('H:i') }}
+                                                            </span>
+                                                        </div>
+                                                        <span
+                                                            class="text-xs text-gray-500 mt-0.5">Out{{ $isEarlyOut ? ' (Early)' : '' }}</span>
+                                                    @else
+                                                        <div class="flex items-center space-x-1 text-gray-400">
+                                                            <svg class="w-3.5 h-3.5" fill="none"
+                                                                stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                                    stroke-width="2"
+                                                                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z">
+                                                                </path>
+                                                            </svg>
+                                                            <span class="text-sm font-medium">--:--</span>
+                                                        </div>
+                                                        <span class="text-xs text-gray-500 mt-0.5">Pending</span>
+                                                    @endif
+                                                </div>
+                                            </div>
+
+                                            <!-- Late Info -->
+                                            @if ($isLate)
+                                                <div class="text-xs text-orange-600 font-medium">
+                                                    {{ $user->schedule->formatted_late_time }}
+                                                </div>
+                                            @endif
                                         @endif
                                     </div>
                                 @endif

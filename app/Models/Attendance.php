@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
@@ -31,31 +32,65 @@ class Attendance extends Model
     ];
 
     protected $casts = [
-        'time' => 'datetime',
+        'checked_time' => 'datetime',
         'latitude' => 'float',
         'longitude' => 'float',
         'distance' => 'float',
+        'is_checked' => 'boolean',
     ];
 
-    public function schedule(){
+    public function schedule()
+    {
         return $this->belongsTo(Schedule::class);
     }
 
-    public function getStatusColorAttribute(){
-        if($this->status == self::STATUS_PRESENT) {
+    public function getStatusColorAttribute()
+    {
+        if ($this->status == self::STATUS_PRESENT) {
             return 'bg-green-100 text-green-800';
         } elseif ($this->status == self::STATUS_LATE) {
             return 'bg-yellow-100 text-yellow-800';
         } elseif ($this->status == self::STATUS_ABSENT) {
             return 'bg-red-100 text-red-800';
         }
+        return 'bg-gray-100 text-gray-800';
     }
 
-    // public function check_in_time(){
-    //     return $this->where('type', self::TYPE_CHECK_IN)->pluck('time')->first();
-    // }
+    /**
+     * Get formatted check in/out time (HH:mm format)
+     */
+    public function getFormattedTimeAttribute()
+    {
+        if (!$this->checked_time) {
+            return '-';
+        }
+        return Carbon::parse($this->checked_time)->format('H:i');
+    }
 
-    // public function check_out_time(){
-    //     return $this->where('type', self::TYPE_CHECK_OUT)->pluck('time')->first();
-    // }
+    /**
+     * Get formatted check in/out time with date
+     */
+    public function getFormattedDateTimeAttribute()
+    {
+        if (!$this->checked_time) {
+            return '-';
+        }
+        return Carbon::parse($this->checked_time)->format('d M Y H:i');
+    }
+
+    /**
+     * Check if this is a check in record
+     */
+    public function isCheckIn()
+    {
+        return $this->type === self::TYPE_CHECK_IN;
+    }
+
+    /**
+     * Check if this is a check out record
+     */
+    public function isCheckOut()
+    {
+        return $this->type === self::TYPE_CHECK_OUT;
+    }
 }
