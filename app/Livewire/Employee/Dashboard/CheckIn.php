@@ -45,7 +45,10 @@ class CheckIn extends Component
             return;
         }
 
-        // Check for incomplete attendance first
+        // Auto-checkout expired schedules first
+        $this->autoCheckoutExpiredSchedules();
+
+        // Check for incomplete attendance
         $this->checkIncompleteAttendance();
 
         // If no incomplete attendance, load today's schedule and attendance
@@ -59,6 +62,87 @@ class CheckIn extends Component
     public function render()
     {
         return view('livewire.employee.dashboard.check-in');
+    }
+
+    /**
+     * Auto-checkout expired schedules that passed checkout window
+     */
+    private function autoCheckoutExpiredSchedules()
+    {
+        $now = Carbon::now();
+
+        // Find all schedules with check-in but no check-out that are past checkout window
+        $expiredSchedules = Schedule::where('user_id', Auth::id())
+            ->where('is_checked', false)
+            ->whereHas('checkIn', function ($query) {
+                $query->where('is_checked', true);
+            })
+            ->whereDoesntHave('checkOut', function ($query) {
+                $query->where('is_checked', true);
+            })
+            ->get();
+
+        foreach ($expiredSchedules as $schedule) {
+            $scheduleDate = $schedule->date->format('Y-m-d');
+            $scheduleEnd = Carbon::parse($scheduleDate . ' ' . $schedule->end_time->format('H:i:s'));
+
+            // Handle cross-midnight
+            if ($scheduleEnd->lt(Carbon::parse($scheduleDate . ' ' . $schedule->start_time->format('H:i:s')))) {
+                $scheduleEnd->addDay();
+            }
+
+            // Checkout window: 2 hours after schedule end
+            $checkoutWindowEnd = $scheduleEnd->copy()->addHours(2);
+
+            // If current time is past checkout window, auto-checkout
+            if ($now->gt($checkoutWindowEnd)) {
+                try {
+                    DB::beginTransaction();
+
+                    $checkIn = $schedule->checkIn;
+                    $checkOut = $schedule->checkOut;
+
+                    // Determine status based on check-in
+                    $finalStatus = Attendance::STATUS_LATE;
+
+                    // If no checkout record exists, create one
+                    if (!$checkOut) {
+                        $checkOut = Attendance::create([
+                            'type' => Attendance::TYPE_CHECK_OUT,
+                            'schedule_id' => $schedule->id,
+                            'is_checked' => false,
+                            'status' => Attendance::STATUS_ABSENT,
+                            'notes' => 'Auto-generated check-out record',
+                        ]);
+                    }
+
+                    // Auto-checkout with CURRENT REALTIME (bukan schedule end time)
+                    $checkOut->update([
+                        'checked_time' => $now, // Menggunakan waktu realtime saat trigger
+                        'latitude' => $checkIn->latitude,
+                        'longitude' => $checkIn->longitude,
+                        'distance' => $checkIn->distance,
+                        'status' => $finalStatus,
+                        'is_checked' => true,
+                        'notes' => 'Auto checkout - exceeded checkout window at ' . $now->format('Y-m-d H:i:s'),
+                    ]);
+
+                    // Update schedule
+                    $scheduleNotes = $finalStatus === Attendance::STATUS_LATE ? 'LATE (Auto)' : 'PRESENT (Auto)';
+                    $schedule->update([
+                        'is_checked' => true,
+                        'notes' => $scheduleNotes,
+                    ]);
+
+                    DB::commit();
+
+                    \Log::info("Auto-checkout completed for schedule ID: {$schedule->id}, Date: {$scheduleDate}, Checkout Time: {$now->format('Y-m-d H:i:s')}");
+                } catch (\Exception $e) {
+                    DB::rollBack();
+                    \Log::error("Auto-checkout failed for schedule ID: {$schedule->id}, Error: {$e->getMessage()}");
+                }
+            }
+        }
     }
 
     /**
@@ -78,14 +162,22 @@ class CheckIn extends Component
                 $query->where('is_checked', true);
             })
             ->whereHas('schedule', function ($query) use ($now) {
-                // hanya ambil schedule yang seharusnya sudah selesai
-                $query->where('end_time', '<', $now);
+                // Ambil schedule yang seharusnya sudah selesai
+                $query->where(function ($q) use ($now) {
+                    // Normal schedule (tidak cross midnight)
+                    $q->whereRaw('TIME(end_time) > TIME(start_time)')
+                        ->where('end_time', '<', $now)
+                        // Cross midnight schedule
+                        ->orWhere(function ($q2) use ($now) {
+                            $q2->whereRaw('TIME(end_time) <= TIME(start_time)')->where('date', '<', $now->copy()->subDay()->format('Y-m-d'));
+                        });
+                });
             })
             ->orderBy('checked_time', 'desc')
             ->first();
 
         if ($this->incompleteAttendance) {
-            $scheduleDate = $this->incompleteAttendance->schedule->date->format('Y-m-d');
+            $scheduleDate = $this->incompleteAttendance->schedule->date->format('d M Y');
             $this->errorMessage = "You must complete checkout for {$scheduleDate} before starting a new attendance session.";
 
             // Load the incomplete schedule and checkout record
@@ -185,68 +277,48 @@ class CheckIn extends Component
         }
 
         $now = Carbon::now();
-        $scheduleStart = Carbon::parse($this->todaySchedule->start_time);
-        $scheduleEnd = Carbon::parse($this->todaySchedule->end_time);
+        $scheduleDate = $this->todaySchedule->date->format('Y-m-d');
+        $scheduleStart = Carbon::parse($scheduleDate . ' ' . $this->todaySchedule->start_time->format('H:i:s'));
+        $scheduleEnd = Carbon::parse($scheduleDate . ' ' . $this->todaySchedule->end_time->format('H:i:s'));
+
         $alreadyCheckedIn = $this->todayCheckIn && $this->todayCheckIn->is_checked;
 
-        // Allow check-in 30 minutes before schedule starts
+        // Allow check-in 60 minutes before schedule starts
         $checkInWindow = $scheduleStart->copy()->subMinutes(60);
 
+        // Handle cross-midnight schedules
         if ($scheduleEnd->lt($scheduleStart)) {
-            // Cross midnight
-            $scheduleEnd->addDay(); // geser ke hari berikutnya
-            $this->handleCrossMidnightSchedule($now, $checkInWindow, $scheduleStart, $scheduleEnd, $alreadyCheckedIn);
-        } else {
-            // Normal
-            $this->handleNormalSchedule($now, $checkInWindow, $scheduleStart, $scheduleEnd, $alreadyCheckedIn);
+            $scheduleEnd->addDay();
         }
-    }
 
-    private function handleNormalSchedule($now, $checkInWindow, $scheduleStart, $scheduleEnd, $alreadyCheckedIn)
-    {
         $checkOutWindow = $scheduleEnd->copy()->addHours(2);
 
-        if ($now->between($checkInWindow, $scheduleEnd)) {
-            $this->isWithinCheckInTime = !$alreadyCheckedIn;
+        // Check-in window: dari 60 menit sebelum jadwal sampai jadwal berakhir
+        if (!$alreadyCheckedIn && $now->between($checkInWindow, $scheduleEnd)) {
+            $this->isWithinCheckInTime = true;
             $this->isWithinCheckOutTime = false;
-        } elseif ($alreadyCheckedIn && $now->between($scheduleStart, $checkOutWindow)) {
+            $this->scheduleStatus = 'You can check in now. Schedule: ' . $scheduleStart->format('H:i') . ' - ' . $scheduleEnd->format('H:i');
+        }
+        // Check-out window: dari jadwal mulai sampai 2 jam setelah jadwal berakhir
+        elseif ($alreadyCheckedIn && $now->between($scheduleStart, $checkOutWindow)) {
             $this->isWithinCheckInTime = false;
             $this->isWithinCheckOutTime = true;
-        } else {
-            $this->isWithinCheckInTime = false;
-            $this->isWithinCheckOutTime = false;
+            $this->scheduleStatus = 'You can check out until ' . $checkOutWindow->format('H:i') . '.';
         }
-    }
-
-    private function handleCrossMidnightSchedule($now, $checkInWindow, $scheduleStart, $scheduleEnd, $alreadyCheckedIn)
-    {
-        $checkOutWindow = $scheduleEnd->copy()->addHours(2);
-
-        // Sama saja dengan normal setelah scheduleEnd digeser ke +1 hari
-        if ($now->between($checkInWindow, $scheduleEnd)) {
-            $this->isWithinCheckInTime = !$alreadyCheckedIn;
-            $this->isWithinCheckOutTime = false;
-        } elseif ($alreadyCheckedIn && $now->between($scheduleStart, $checkOutWindow)) {
-            $this->isWithinCheckInTime = false;
-            $this->isWithinCheckOutTime = true;
-        } else {
+        // Di luar waktu check-in/check-out
+        else {
             $this->isWithinCheckInTime = false;
             $this->isWithinCheckOutTime = false;
-        }
-    }
 
-    private function setScheduleStatusMessage($now, $checkInWindow, $scheduleStart, $scheduleEnd, $checkOutWindow, $alreadyCheckedIn)
-    {
-        if (!$alreadyCheckedIn) {
-            if ($now->lt($checkInWindow)) {
-                $this->scheduleStatus = 'Your schedule starts at ' . $scheduleStart->format('H:i') . '. You can check in 30 minutes before.';
+            if (!$alreadyCheckedIn) {
+                if ($now->lt($checkInWindow)) {
+                    $this->scheduleStatus = 'Your schedule starts at ' . $scheduleStart->format('H:i') . '. You can check in 60 minutes before.';
+                } else {
+                    $this->scheduleStatus = 'Your schedule ended at ' . $scheduleEnd->format('H:i') . '. You can no longer check in for this shift.';
+                }
             } else {
-                $endTimeDisplay = $scheduleEnd->lt($scheduleStart) ? $scheduleEnd->copy()->addDay()->format('H:i (next day)') : $scheduleEnd->format('H:i');
-                $this->scheduleStatus = 'Your schedule ended at ' . $endTimeDisplay . '. You can no longer check in for this shift.';
+                $this->scheduleStatus = 'Check-out window has ended at ' . $checkOutWindow->format('H:i') . '.';
             }
-        } else {
-            $checkOutDisplay = $checkOutWindow->lt($scheduleStart) ? $checkOutWindow->copy()->addDay()->format('H:i (next day)') : $checkOutWindow->format('H:i');
-            $this->scheduleStatus = 'You can check out until ' . $checkOutDisplay . '.';
         }
     }
 
@@ -279,22 +351,27 @@ class CheckIn extends Component
         try {
             DB::beginTransaction();
 
+            $status = $this->determineAttendanceStatus();
+
             // Update check-in record
             $this->todayCheckIn->update([
                 'checked_time' => Carbon::now(),
                 'latitude' => $this->userLatitude,
                 'longitude' => $this->userLongitude,
                 'distance' => $this->distance,
-                'status' => $this->determineAttendanceStatus(),
+                'status' => $status,
                 'is_checked' => true,
             ]);
 
-            // Auto-generate checkout record
-            $this->createCheckOutRecord();
+            // Auto-generate checkout record if not exists
+            if (!$this->todayCheckOut) {
+                $this->createCheckOutRecord();
+            }
 
             DB::commit();
 
-            $this->checkInStatus = 'Success! You have checked in at ' . Carbon::now()->format('h:i A');
+            $statusMessage = $status === Attendance::STATUS_LATE ? ' (Late)' : '';
+            $this->checkInStatus = 'Success! You have checked in at ' . Carbon::now()->format('H:i') . $statusMessage;
             $this->errorMessage = null;
 
             // Reload data
@@ -304,7 +381,7 @@ class CheckIn extends Component
             $this->dispatch('checkInSuccess');
         } catch (\Exception $e) {
             DB::rollBack();
-            $this->errorMessage = 'Failed to check in. Please try again!';
+            $this->errorMessage = 'Failed to check in: ' . $e->getMessage();
             $this->checkInStatus = null;
         }
     }
@@ -354,20 +431,31 @@ class CheckIn extends Component
         try {
             DB::beginTransaction();
 
+            // Determine checkout status based on check-in status
+            $checkInStatus = $this->todayCheckIn->status;
+            $checkOutStatus = Attendance::STATUS_PRESENT;
+
+            // Jika check-in late, maka status tetap LATE
+            if ($checkInStatus === Attendance::STATUS_LATE) {
+                $checkOutStatus = Attendance::STATUS_LATE;
+            }
+
             // Update check-out record
             $this->todayCheckOut->update([
                 'checked_time' => Carbon::now(),
                 'latitude' => $this->userLatitude,
                 'longitude' => $this->userLongitude,
                 'distance' => $this->distance,
-                'status' => Attendance::STATUS_PRESENT,
+                'status' => $checkOutStatus,
                 'is_checked' => true,
+                'notes' => 'Check-out completed',
             ]);
 
             // Update schedule as completed
+            $scheduleNotes = $checkOutStatus === Attendance::STATUS_LATE ? 'LATE' : 'PRESENT';
             $this->todaySchedule->update([
                 'is_checked' => true,
-                'notes' => 'PRESENT',
+                'notes' => $scheduleNotes,
             ]);
 
             // Clear incomplete attendance if any
@@ -376,7 +464,7 @@ class CheckIn extends Component
 
             DB::commit();
 
-            $this->checkInStatus = 'Success! You have checked out at ' . Carbon::now()->format('h:i A');
+            $this->checkInStatus = 'Success! You have checked out at ' . Carbon::now()->format('H:i');
 
             // Reload data
             $this->loadTodayAttendance();
@@ -385,7 +473,7 @@ class CheckIn extends Component
             $this->dispatch('checkOutSuccess');
         } catch (\Exception $e) {
             DB::rollBack();
-            $this->errorMessage = 'Failed to check out. Please try again.';
+            $this->errorMessage = 'Failed to check out: ' . $e->getMessage();
             $this->checkInStatus = null;
         }
     }
@@ -433,10 +521,11 @@ class CheckIn extends Component
         }
 
         $now = Carbon::now();
-        $scheduleStart = Carbon::parse($this->todaySchedule->start_time);
+        $scheduleDate = $this->todaySchedule->date->format('Y-m-d');
+        $scheduleStart = Carbon::parse($scheduleDate . ' ' . $this->todaySchedule->start_time->format('H:i:s'));
 
-        // Consider late if more than 15 minutes after schedule start
-        if ($now->gt($scheduleStart->copy()->addMinutes(30))) {
+        // Consider late if more than 30 minutes after schedule start (sesuai grace period)
+        if ($now->gt($scheduleStart->copy()->addMinutes(Schedule::LATE_GRACE_PERIOD_MINUTES))) {
             return Attendance::STATUS_LATE;
         }
 

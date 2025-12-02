@@ -94,12 +94,14 @@ class AttendanceList extends Component
 
     /**
      * Get employees under current manager with their schedules
+     * FIXED: Filter condition BEFORE pagination to get correct results
      */
     public function getUsersWithSchedulesProperty()
     {
         try {
             $currentManager = $this->getCurrentManager();
 
+            // Step 1: Get base query with schedules
             $query = User::query()
                 ->where('user_type', User::ROLE_EMPLOYEE)
                 ->where('manager_id', $currentManager->id)
@@ -118,22 +120,21 @@ class AttendanceList extends Component
                 $query->where('id', $this->selectedUser);
             }
 
-            // Filter by shift type BEFORE pagination
+            // Filter by shift type
             if ($this->selectedShift) {
                 $query->whereHas('schedules', function ($q) {
                     $q->where('date', $this->selectedDate)->where('shift_type', $this->selectedShift);
                 });
             }
 
-            $users = $query->orderBy('name')->paginate(10);
+            // Step 2: Get all users first (without pagination) for condition filtering
+            $allUsers = $query->orderBy('name')->get();
 
-            // Transform users to include schedule and attendance data
-            $users->getCollection()->transform(function ($user) {
-                // Get schedule for the selected date
+            // Step 3: Transform and add schedule/attendance data
+            $transformedUsers = $allUsers->map(function ($user) {
                 $schedule = $user->schedules->first();
 
                 if (!$schedule) {
-                    // Create default schedule (holiday) for display purposes only
                     $schedule = new Schedule([
                         'user_id' => $user->id,
                         'date' => $this->selectedDate,
@@ -146,7 +147,6 @@ class AttendanceList extends Component
 
                 $user->schedule = $schedule;
 
-                // Get attendance data if schedule exists in database
                 if ($schedule->exists) {
                     $user->checkIn = $schedule->attendances->where('type', Attendance::TYPE_CHECK_IN)->where('is_checked', true)->first();
 
@@ -159,9 +159,9 @@ class AttendanceList extends Component
                 return $user;
             });
 
-            // Filter by attendance condition after transformation
+            // Step 4: Filter by attendance condition BEFORE pagination
             if ($this->selectedCondition) {
-                $filteredCollection = $users->getCollection()->filter(function ($user) {
+                $transformedUsers = $transformedUsers->filter(function ($user) {
                     $status = $user->schedule->attendance_status;
 
                     switch ($this->selectedCondition) {
@@ -187,16 +187,22 @@ class AttendanceList extends Component
                             return true;
                     }
                 });
-
-                $users->setCollection($filteredCollection);
             }
 
-            return $users;
-        } catch (\Exception $e) {
-            // Log error untuk debugging
-            \Log::error('Error in getUsersWithSchedulesProperty: ' . $e->getMessage());
+            // Step 5: Manual pagination after filtering
+            $perPage = 10;
+            $currentPage = $this->getPage();
+            $total = $transformedUsers->count();
 
-            // Return empty paginator
+            // Slice collection for current page
+            $paginatedUsers = $transformedUsers->slice(($currentPage - 1) * $perPage, $perPage)->values();
+
+            // Create paginator
+            $paginator = new \Illuminate\Pagination\LengthAwarePaginator($paginatedUsers, $total, $perPage, $currentPage, ['path' => request()->url(), 'query' => request()->query()]);
+
+            return $paginator;
+        } catch (\Exception $e) {
+            \Log::error('Error in getUsersWithSchedulesProperty: ' . $e->getMessage());
             return new \Illuminate\Pagination\LengthAwarePaginator(collect([]), 0, 10, 1);
         }
     }
