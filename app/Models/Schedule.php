@@ -12,6 +12,8 @@ class Schedule extends Model
 
     // Grace period untuk keterlambatan dalam menit
     const LATE_GRACE_PERIOD_MINUTES = 30;
+    // Minimum early checkout dalam menit (keluar lebih dari 30 menit sebelum jadwal)
+    const EARLY_CHECKOUT_THRESHOLD_MINUTES = 30;
 
     protected $fillable = ['user_id', 'date', 'start_time', 'end_time', 'shift_type', 'notes', 'is_checked', 'created_by'];
 
@@ -127,7 +129,7 @@ class Schedule extends Model
 
     /**
      * Check if employee is late for check in (with grace period)
-     * Grace period: 30 menit
+     * Grace period: 30 menit - late jika check in lebih dari 30 menit setelah jadwal
      */
     public function isLateCheckIn($checkInTime = null)
     {
@@ -164,6 +166,7 @@ class Schedule extends Model
 
     /**
      * Check if employee checked out early
+     * Early checkout = keluar lebih dari 30 menit sebelum jadwal berakhir
      */
     public function isEarlyCheckOut($checkOutTime = null)
     {
@@ -172,8 +175,30 @@ class Schedule extends Model
         }
 
         $checkOutTime = $checkOutTime ?: now();
+        $checkOutCarbon = Carbon::parse($checkOutTime);
+        $scheduleEnd = Carbon::parse($this->date->format('Y-m-d') . ' ' . $this->end_time->format('H:i:s'));
 
-        return Carbon::parse($checkOutTime)->lt($this->end_time);
+        // Hitung selisih dalam menit (berapa menit sebelum jadwal berakhir)
+        $minutesEarly = $checkOutCarbon->diffInMinutes($scheduleEnd, false);
+
+        // Dianggap early checkout jika keluar lebih dari 30 menit sebelum jadwal
+        return $minutesEarly > self::EARLY_CHECKOUT_THRESHOLD_MINUTES;
+    }
+
+    /**
+     * Get minutes early for checkout (positive = early, negative = overtime)
+     */
+    public function getMinutesEarly($checkOutTime = null)
+    {
+        if (!$this->isWorkingDay() || !$this->end_time) {
+            return 0;
+        }
+
+        $checkOutTime = $checkOutTime ?: now();
+        $checkOutCarbon = Carbon::parse($checkOutTime);
+        $scheduleEnd = Carbon::parse($this->date->format('Y-m-d') . ' ' . $this->end_time->format('H:i:s'));
+
+        return $checkOutCarbon->diffInMinutes($scheduleEnd, false);
     }
 
     /**
@@ -222,7 +247,7 @@ class Schedule extends Model
     /**
      * Get attendance status for this schedule
      * Returns: 'scheduled', 'present', 'absent', 'late', 'early_out', 'partial'
-     * UPDATED: Dengan grace period 30 menit untuk late check-in
+     * UPDATED: Dengan grace period 30 menit untuk late check-in dan early checkout
      */
     public function getAttendanceStatusAttribute()
     {
@@ -366,5 +391,60 @@ class Schedule extends Model
         }
 
         return $hours . 'h late';
+    }
+
+    /**
+     * Get formatted early checkout time
+     */
+    public function getFormattedEarlyTimeAttribute()
+    {
+        $checkOut = $this->attendances()->where('type', Attendance::TYPE_CHECK_OUT)->where('is_checked', true)->first();
+
+        if (!$checkOut || !$this->isEarlyCheckOut($checkOut->checked_time)) {
+            return null;
+        }
+
+        $minutesEarly = $this->getMinutesEarly($checkOut->checked_time);
+
+        if ($minutesEarly < 60) {
+            return $minutesEarly . ' minutes early';
+        }
+
+        $hours = floor($minutesEarly / 60);
+        $minutes = $minutesEarly % 60;
+
+        if ($minutes > 0) {
+            return $hours . 'h ' . $minutes . 'm early';
+        }
+
+        return $hours . 'h early';
+    }
+
+    /**
+     * Get check in time (formatted)
+     */
+    public function getCheckInTimeAttribute()
+    {
+        $checkIn = $this->attendances()->where('type', Attendance::TYPE_CHECK_IN)->where('is_checked', true)->first();
+
+        if (!$checkIn) {
+            return null;
+        }
+
+        return Carbon::parse($checkIn->checked_time)->format('H:i');
+    }
+
+    /**
+     * Get check out time (formatted)
+     */
+    public function getCheckOutTimeAttribute()
+    {
+        $checkOut = $this->attendances()->where('type', Attendance::TYPE_CHECK_OUT)->where('is_checked', true)->first();
+
+        if (!$checkOut) {
+            return null;
+        }
+
+        return Carbon::parse($checkOut->checked_time)->format('H:i');
     }
 }

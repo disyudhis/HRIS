@@ -54,37 +54,77 @@
                             {{-- Attendance Status Badge --}}
                             @if ($date['schedule_status']['status'])
                                 <div class="mt-2 flex justify-center">
-                                    <span class="px-2 py-1 text-xs font-medium rounded-full {{ $date['schedule_status']['badge_class'] }}">
+                                    <span
+                                        class="px-2 py-1 text-xs font-medium rounded-full {{ $date['schedule_status']['badge_class'] }}">
                                         {{ $date['schedule_status']['label'] }}
                                     </span>
                                 </div>
                             @endif
                         </div>
 
-                        <div class="p-2 min-h-[150px]">
+                        <div class="p-2 min-h-[200px]">
                             @if (isset($schedules[$date['date']]))
                                 @foreach ($schedules[$date['date']] as $schedule)
                                     <div
                                         class="mb-2 p-2 rounded-lg text-xs
                                         {{ $schedule->shift_type === 'morning'
-                                            ? 'bg-green-100 text-green-800'
+                                            ? 'bg-green-50 border border-green-200'
                                             : ($schedule->shift_type === 'afternoon'
-                                                ? 'bg-yellow-100 text-yellow-800'
+                                                ? 'bg-yellow-50 border border-yellow-200'
                                                 : ($schedule->shift_type === 'night'
-                                                    ? 'bg-indigo-100 text-indigo-800'
-                                                    : 'bg-gray-100 text-gray-800')) }}">
-                                        <div class="font-medium">{{ $schedule->start_time->format('H:i') }} -
-                                            {{ $schedule->end_time->format('H:i') }}</div>
+                                                    ? 'bg-indigo-50 border border-indigo-200'
+                                                    : 'bg-gray-50 border border-gray-200')) }}">
 
-                                        {{-- Individual schedule status --}}
+                                        {{-- Jadwal Shift --}}
+                                        <div class="font-semibold text-gray-700 mb-2">
+                                            {{ $schedule->start_time->format('H:i') }} -
+                                            {{ $schedule->end_time->format('H:i') }}
+                                        </div>
+
+                                        {{-- Check In/Out Time --}}
+                                        @if (!$schedule->isFutureSchedule())
+                                            <div class="space-y-1 mb-2">
+                                                <div class="flex items-center justify-between text-xs">
+                                                    <span class="text-gray-600">Check In:</span>
+                                                    <span
+                                                        class="font-medium {{ $schedule->check_in_time ? 'text-gray-900' : 'text-gray-400' }}">
+                                                        {{ $schedule->check_in_time ?? '--:--' }}
+                                                    </span>
+                                                </div>
+                                                <div class="flex items-center justify-between text-xs">
+                                                    <span class="text-gray-600">Check Out:</span>
+                                                    <span
+                                                        class="font-medium {{ $schedule->check_out_time ? 'text-gray-900' : 'text-gray-400' }}">
+                                                        {{ $schedule->check_out_time ?? '--:--' }}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        @endif
+
+                                        {{-- Status Badge --}}
                                         <div class="mt-1">
-                                            <span class="inline-block px-1 py-0.5 text-xs rounded {{ $schedule->attendance_status_badge_class }}">
+                                            <span
+                                                class="inline-block px-2 py-1 text-xs rounded-full {{ $schedule->attendance_status_badge_class }}">
                                                 {{ $schedule->attendance_status_label }}
                                             </span>
                                         </div>
 
-                                        @if ($schedule->notes)
-                                            <div class="mt-1 text-xs">{{ $schedule->isFutureSchedule() ? '' : $schedule->notes }}</div>
+                                        {{-- Late/Early Info --}}
+                                        @if (!$schedule->isFutureSchedule())
+                                            @if ($schedule->formatted_late_time)
+                                                <div class="mt-1 text-xs text-orange-600">
+                                                    ⚠️ {{ $schedule->formatted_late_time }}
+                                                </div>
+                                            @endif
+                                            @if ($schedule->formatted_early_time)
+                                                <div class="mt-1 text-xs text-orange-600">
+                                                    ⚠️ {{ $schedule->formatted_early_time }}
+                                                </div>
+                                            @endif
+                                        @endif
+
+                                        @if ($schedule->notes && !$schedule->isFutureSchedule())
+                                            <div class="mt-1 text-xs text-gray-600">{{ $schedule->notes }}</div>
                                         @endif
                                     </div>
                                 @endforeach
@@ -140,11 +180,21 @@
 
                 <div class="relative">
                     {{-- Status-based vertical bar --}}
-                    <div class="absolute left-0 top-0 bottom-0 w-2 rounded-l-lg
-                        {{ $scheduleStatus['status'] === 'present' ? 'bg-green-500' :
-                           ($scheduleStatus['status'] === 'late' ? 'bg-yellow-500' :
-                           ($scheduleStatus['status'] === 'absent' ? 'bg-red-500' :
-                           ($scheduleStatus['status'] === 'scheduled' ? 'bg-[#3085FE]' : 'bg-gray-300'))) }}">
+                    <div
+                        class="absolute left-0 top-0 bottom-0 w-2 rounded-l-lg
+                        {{ $scheduleStatus['status'] === 'present'
+                            ? 'bg-green-500'
+                            : ($scheduleStatus['status'] === 'late'
+                                ? 'bg-orange-500'
+                                : ($scheduleStatus['status'] === 'absent'
+                                    ? 'bg-red-500'
+                                    : ($scheduleStatus['status'] === 'early_out'
+                                        ? 'bg-orange-500'
+                                        : ($scheduleStatus['status'] === 'late_early_out'
+                                            ? 'bg-red-500'
+                                            : ($scheduleStatus['status'] === 'scheduled'
+                                                ? 'bg-[#3085FE]'
+                                                : 'bg-gray-300'))))) }}">
                     </div>
 
                     <div class="pl-4 pb-4 border-b border-gray-200">
@@ -155,75 +205,98 @@
 
                             {{-- Status badge --}}
                             @if ($scheduleStatus['status'])
-                                <span class="px-2 py-1 text-xs font-medium rounded-full {{ $scheduleStatus['badge_class'] }}">
+                                <span
+                                    class="px-2 py-1 text-xs font-medium rounded-full {{ $scheduleStatus['badge_class'] }}">
                                     {{ $scheduleStatus['label'] }}
                                 </span>
                             @endif
                         </div>
 
                         @if ($hasSchedule)
-                            <div class="flex flex-wrap gap-4">
-                                @foreach ($schedules[$date['date']] as $schedule)
-                                    <div class="flex items-center">
-                                        <div
-                                            class="flex items-center justify-center w-12 h-12 rounded-lg bg-blue-100 mr-3">
-                                            @if ($schedule->start_time->format('a') == 'am')
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-[#3085FE]"
-                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                        stroke-width="2"
-                                                        d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                                                </svg>
-                                            @else
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-[#3085FE]"
-                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                        stroke-width="2"
-                                                        d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                                                </svg>
-                                            @endif
-                                        </div>
-                                        <div class="text-lg font-medium text-gray-900">
-                                            {{ $schedule->start_time->format('h:i a') }}
-                                        </div>
-                                    </div>
-
-                                    <div class="flex items-center">
-                                        <div
-                                            class="flex items-center justify-center w-12 h-12 rounded-lg bg-blue-100 mr-3">
-                                            @if ($schedule->end_time->format('a') == 'pm')
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-[#3085FE]"
-                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                        stroke-width="2"
-                                                        d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                                                </svg>
-                                            @else
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-[#3085FE]"
-                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                        stroke-width="2"
-                                                        d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                                                </svg>
-                                            @endif
-
-                                        </div>
-                                        <div class="text-lg font-medium text-gray-900">
-                                            {{ $schedule->end_time->format('h:i a') }}
-                                        </div>
-                                    </div>
-                                @endforeach
-                            </div>
-
-                            {{-- Schedule details --}}
                             @foreach ($schedules[$date['date']] as $schedule)
-                                <div class="mt-3 p-2 rounded-lg bg-gray-50">
+                                {{-- Schedule Time Info --}}
+                                <div class="mb-3">
+                                    <div class="text-sm font-medium text-gray-500 mb-2">Scheduled Time</div>
+                                    <div class="flex flex-wrap gap-4">
+                                        <div class="flex items-center">
+                                            <div
+                                                class="flex items-center justify-center w-12 h-12 rounded-lg bg-blue-100 mr-3">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-[#3085FE]"
+                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                            </div>
+                                            <div>
+                                                <div class="text-xs text-gray-500">Start</div>
+                                                <div class="text-lg font-medium text-gray-900">
+                                                    {{ $schedule->start_time->format('h:i a') }}
+                                                </div>
+                                            </div>
+                                        </div>
 
-                                    <div class="text-xs {{ $schedule->attendance_status_badge_class }} inline-block px-2 py-1 rounded mt-1">
+                                        <div class="flex items-center">
+                                            <div
+                                                class="flex items-center justify-center w-12 h-12 rounded-lg bg-blue-100 mr-3">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-[#3085FE]"
+                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                            </div>
+                                            <div>
+                                                <div class="text-xs text-gray-500">End</div>
+                                                <div class="text-lg font-medium text-gray-900">
+                                                    {{ $schedule->end_time->format('h:i a') }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {{-- Actual Check In/Out Time --}}
+                                @if (!$schedule->isFutureSchedule())
+                                    <div class="mt-3 p-3 rounded-lg bg-gray-50">
+                                        <div class="text-sm font-medium text-gray-500 mb-2">Actual Time</div>
+                                        <div class="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <div class="text-xs text-gray-500 mb-1">Check In</div>
+                                                <div
+                                                    class="text-base font-semibold {{ $schedule->check_in_time ? 'text-gray-900' : 'text-gray-400' }}">
+                                                    {{ $schedule->check_in_time ?? '--:--' }}
+                                                </div>
+                                                @if ($schedule->formatted_late_time)
+                                                    <div class="text-xs text-orange-600 mt-1">
+                                                        ⚠️ {{ $schedule->formatted_late_time }}
+                                                    </div>
+                                                @endif
+                                            </div>
+                                            <div>
+                                                <div class="text-xs text-gray-500 mb-1">Check Out</div>
+                                                <div
+                                                    class="text-base font-semibold {{ $schedule->check_out_time ? 'text-gray-900' : 'text-gray-400' }}">
+                                                    {{ $schedule->check_out_time ?? '--:--' }}
+                                                </div>
+                                                @if ($schedule->formatted_early_time)
+                                                    <div class="text-xs text-orange-600 mt-1">
+                                                        ⚠️ {{ $schedule->formatted_early_time }}
+                                                    </div>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endif
+
+                                {{-- Schedule Status --}}
+                                <div class="mt-3">
+                                    <div
+                                        class="text-xs {{ $schedule->attendance_status_badge_class }} inline-block px-2 py-1 rounded-full">
                                         {{ $schedule->attendance_status_label }}
                                     </div>
-                                    @if ($schedule->notes)
-                                        <div class="mt-1 text-xs text-gray-500">{{ $schedule->isFutureSchedule() ? '' : $schedule->notes }}</div>
+                                    @if ($schedule->notes && !$schedule->isFutureSchedule())
+                                        <div class="mt-2 text-xs text-gray-500">{{ $schedule->notes }}</div>
                                     @endif
                                 </div>
                             @endforeach
@@ -237,20 +310,7 @@
                                     </svg>
                                 </div>
                                 <div class="text-lg font-medium text-gray-400">
-                                    00:00 am
-                                </div>
-                            </div>
-
-                            <div class="flex items-center mt-4">
-                                <div class="flex items-center justify-center w-12 h-12 rounded-lg bg-gray-100 mr-3">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-400"
-                                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                                    </svg>
-                                </div>
-                                <div class="text-lg font-medium text-gray-400">
-                                    00:00 am
+                                    No Schedule
                                 </div>
                             </div>
                         @endif

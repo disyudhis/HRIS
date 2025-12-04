@@ -119,7 +119,7 @@ class ScheduleList extends Component
 
     /**
      * Get schedule status for a specific date
-     * This method can be called from the view to get proper status
+     * UPDATED: Priority untuk absent lebih tinggi untuk mengubah status hari menjadi merah
      */
     public function getScheduleStatus($dateKey)
     {
@@ -127,32 +127,44 @@ class ScheduleList extends Component
             return [
                 'status' => null,
                 'label' => 'No Schedule',
-                'badge_class' => 'bg-gray-100 text-gray-600'
+                'badge_class' => 'bg-gray-100 text-gray-600',
             ];
         }
 
         $schedules = $this->schedules[$dateKey];
         $overallStatus = 'scheduled';
+        $hasAbsent = false;
+        $hasLate = false;
+        $hasEarlyOut = false;
+        $hasPresent = false;
 
         // Check each schedule for the date
         foreach ($schedules as $schedule) {
             $scheduleStatus = $schedule->attendance_status;
 
-            // Priority: absent > late > early_out > present > scheduled
+            // Track different status types
             if ($scheduleStatus === 'absent') {
-                $overallStatus = 'absent';
-                break;
-            } elseif (in_array($scheduleStatus, ['late', 'late_early_out', 'late_no_checkout']) && $overallStatus !== 'absent') {
-                $overallStatus = 'late';
-            } elseif (in_array($scheduleStatus, ['early_out', 'no_checkout']) && !in_array($overallStatus, ['absent', 'late'])) {
-                $overallStatus = 'early_out';
-            } elseif ($scheduleStatus === 'present' && !in_array($overallStatus, ['absent', 'late', 'early_out'])) {
-                $overallStatus = 'present';
+                $hasAbsent = true;
+            } elseif (in_array($scheduleStatus, ['late', 'late_early_out', 'late_no_checkout'])) {
+                $hasLate = true;
+            } elseif (in_array($scheduleStatus, ['early_out', 'no_checkout'])) {
+                $hasEarlyOut = true;
+            } elseif ($scheduleStatus === 'present') {
+                $hasPresent = true;
             }
         }
 
-        // Get the first schedule to get the badge class
-        $firstSchedule = collect($schedules)->first();
+        // Priority determination: absent > late > early_out > present > scheduled
+        // Jika ada satu schedule saja yang absent, maka status hari adalah ABSENT (MERAH)
+        if ($hasAbsent) {
+            $overallStatus = 'absent';
+        } elseif ($hasLate) {
+            $overallStatus = 'late';
+        } elseif ($hasEarlyOut) {
+            $overallStatus = 'early_out';
+        } elseif ($hasPresent) {
+            $overallStatus = 'present';
+        }
 
         $labels = [
             'scheduled' => 'Scheduled',
@@ -167,7 +179,7 @@ class ScheduleList extends Component
             'scheduled' => 'bg-blue-100 text-blue-800',
             'present' => 'bg-green-100 text-green-800',
             'absent' => 'bg-red-100 text-red-800',
-            'late' => 'bg-yellow-100 text-yellow-800',
+            'late' => 'bg-orange-100 text-orange-800',
             'early_out' => 'bg-orange-100 text-orange-800',
             'holiday' => 'bg-gray-100 text-gray-800',
         ];
@@ -175,7 +187,7 @@ class ScheduleList extends Component
         return [
             'status' => $overallStatus,
             'label' => $labels[$overallStatus] ?? 'Unknown',
-            'badge_class' => $badgeClasses[$overallStatus] ?? 'bg-gray-100 text-gray-600'
+            'badge_class' => $badgeClasses[$overallStatus] ?? 'bg-gray-100 text-gray-600',
         ];
     }
 
@@ -242,7 +254,7 @@ class ScheduleList extends Component
             return view('livewire.employee.schedules.schedule-list-month', [
                 'weeks' => $weeks,
                 'month' => $date->format('F Y'),
-                'displayDates' => array_slice($this->allDates, 0, $this->displayLimit)
+                'displayDates' => array_slice($this->allDates, 0, $this->displayLimit),
             ]);
         }
     }
