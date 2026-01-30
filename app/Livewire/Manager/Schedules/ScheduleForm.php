@@ -144,7 +144,7 @@ class ScheduleForm extends Component
     {
         switch ($this->shiftType) {
             case 'morning':
-                $this->startTime = '08:00';
+                $this->startTime = '10:00';
                 $this->endTime = '17:00';
                 break;
             case 'afternoon':
