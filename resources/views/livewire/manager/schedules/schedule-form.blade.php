@@ -83,7 +83,7 @@
                         <label for="shiftType" class="block text-sm font-medium text-gray-700">Shift Type</label>
                         <select wire:model="shiftType" id="shiftType"
                             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#3085FE] focus:ring-[#3085FE]">
-                            <option value="morning">Morning (10:00 - 17:00)</option>
+                            <option value="morning">Morning (08:00 - 17:00)</option>
                             <option value="afternoon">Afternoon (14:00 - 23:00)</option>
                             <option value="night">Night (23:00 - 07:00)</option>
                         </select>
